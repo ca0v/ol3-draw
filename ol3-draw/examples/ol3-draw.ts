@@ -36,11 +36,14 @@ export function run() {
     map.addControl(Draw.create({ geometryType: "Polygon", label: "▧", className: "ol-draw right-6 top" }));
     map.addControl(Draw.create({ geometryType: "MultiLineString", label: "▬", className: "ol-draw right-4 top" }));
     map.addControl(Draw.create({ geometryType: "Point", label: "●", className: "ol-edit right-2 top" }));
-    map.addControl(Modify.create({ label: "Δ", className: "ol-edit right top" }));
+    map.addControl(Modify.create({ label: "Δ", position: "right top" }));
 
     map.addControl(Translate.create({ label: "↔", position: "right-4 top-2" }));
     map.addControl(Button.create({ label: "␡", title: "Delete", position: "right-2 top-2", eventName: "delete-drawing" }));
     map.addControl(Button.create({ label: "⎚", title: "Clear", position: "right top-2", eventName: "clear-drawings" }));
+
+    map.addControl(Modify.create({ label: "Δ", position: "right-2 top-4" }));
+    map.addControl(Translate.create({ label: "↔", position: "right top-4" }));
 
     {
         let select = new ol.interaction.Select();
@@ -88,20 +91,4 @@ export function run() {
         stopInteraction(map, ol.interaction.Select);
     });
 
-    map.on("interaction-active", (args: { interaction: ol.interaction.Interaction }) => {
-        stopControl(map, Button);
-
-        if (args.interaction instanceof Draw) {
-            if (args.interaction.getActive()) {
-                stopInteraction(map, ol.interaction.Modify);
-                stopInteraction(map, ol.interaction.Select);
-            }
-        }
-        if (args.interaction instanceof ol.interaction.Select) {
-            if (args.interaction.getActive()) {
-                stopInteraction(map, ol.interaction.Draw);
-                stopInteraction(map, ol.interaction.Modify);
-            }
-        }
-    })
 }

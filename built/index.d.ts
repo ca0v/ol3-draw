@@ -216,16 +216,13 @@ declare module "ol3-draw/ol3-button" {
 }
 declare module "ol3-draw/ol3-edit" {
     import ol = require("openlayers");
-    export interface EditControlOptions extends olx.control.ControlOptions {
-        className?: string;
-        label?: string;
-        title?: string;
+    import { Button, IOptions as IButtonOptions } from "ol3-draw/ol3-button";
+    export interface EditControlOptions extends IButtonOptions {
     }
-    export class Modify extends ol.control.Control {
+    export class Modify extends Button {
         static DEFAULT_OPTIONS: EditControlOptions;
         static create(options?: EditControlOptions): Modify;
         options: EditControlOptions;
-        constructor(options: EditControlOptions);
         setMap(map: ol.Map): void;
     }
 }

@@ -49,9 +49,12 @@ export class Button extends ol.control.Control {
         options.element.appendChild(button);
 
         this.set("active", false);
-        button.addEventListener("click", () => this.set("active", !this.get("active")));
+        button.addEventListener("click", () => {
+            this.dispatchEvent("click");
+            this.set("active", !this.get("active"));
+        });
 
-        this.on("change:active", () => this.options.element.classList.toggle("active", this.get("active")));
+        this.on("change:active", () => void this.options.element.classList.toggle("active", this.get("active")));
     }
 
     cssin() {

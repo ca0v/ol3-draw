@@ -50,39 +50,45 @@ export class Translate extends Button {
 
     setMap(map: ol.Map) {
         super.setMap(map);
-
-        let select = new ol.interaction.Select({ wrapX: false });
-        select.setActive(false);
-
-        addInteraction(map, select);
-        select.on("change:active", () => {
-            this.options.element.classList.toggle("active", select.getActive());
-        });
-
-        select.on("select", (args: ol.interaction.SelectEvent) => {
-            let translate = new ol.interaction.Translate({
-                features: select.getFeatures()
-            });
-            translate.setActive(false);
-
-            addInteraction(map, translate);
-            translate.setActive(true);
-
-            select.on("change:active", () => {
-                if (!select.getActive() && translate) {
-                    translate.setActive(false);
-                    map.removeInteraction(translate);
-                    translate = null;
-                }
-            });
-            
-        });
-
+        let translate: ol.interaction.Translate;
+        let select: ol.interaction.Select;
 
         this.on("change:active", () => {
+            let active = this.get("active");
+            this.options.element.classList.toggle("active", active);
+            stopInteraction(map, ol.interaction.Select);
             stopInteraction(map, ol.interaction.Modify);
             stopInteraction(map, ol.interaction.Draw);
-            select.setActive(!select.getActive());
+
+            if (select) {
+                map.removeInteraction(select);
+                select = null;
+            }
+            if (translate) {
+                map.removeInteraction(translate);
+                translate = null;
+            }
+
+            if (active) {
+                select = new ol.interaction.Select({ wrapX: false });
+                addInteraction(map, select);
+                select.setActive(true);
+
+                select.on("select", (args: ol.interaction.SelectEvent) => {
+                    translate = new ol.interaction.Translate({
+                        features: select.getFeatures()
+                    });
+
+                    map.addInteraction(translate);
+                    translate.setActive(true);
+                });
+
+                select.on("change:active", () => {
+                    this.set("active", false);
+                });
+
+            } else {
+            }
         });
 
     }
