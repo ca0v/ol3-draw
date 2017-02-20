@@ -113,10 +113,7 @@ export class Modify extends ol.control.Control {
         addInteraction(map, select);
         select.on("change:active", () => this.options.element.classList.toggle("active", select.getActive()));
 
-        select.on("select", (args: {
-            deselected: ol.Feature[],
-            selected: ol.Feature[]
-        }) => {
+        select.on("select", (args: ol.interaction.SelectEvent) => {
             let modify = new ol.interaction.Modify({
                 features: select.getFeatures()
             });

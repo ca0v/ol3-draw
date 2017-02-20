@@ -210,7 +210,7 @@ export class Draw extends ol.control.Control {
                 },
                 stroke: {
                     color: "rgba(255,255,255,1)",
-                    width: 3
+                    width: 5
                 }
             },
             {

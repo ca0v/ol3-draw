@@ -684,7 +684,7 @@ define("ol3-draw/ol3-draw", ["require", "exports", "openlayers", "bower_componen
                     },
                     stroke: {
                         color: "rgba(255,255,255,1)",
-                        width: 3
+                        width: 5
                     }
                 },
                 {
@@ -738,48 +738,16 @@ define("ol3-draw/examples/index", ["require", "exports"], function (require, exp
     exports.run = run;
     ;
 });
-define("ol3-draw/examples/mapmaker", ["require", "exports", "openlayers", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, common_2) {
-    "use strict";
-    var MapMaker = (function () {
-        function MapMaker() {
-        }
-        MapMaker.create = function (options) {
-            options = common_2.mixin(common_2.mixin({}, MapMaker.DEFAULT_OPTIONS), options);
-            options.target.classList.add("ol-map");
-            common_2.cssin("mapmaker", "\n        .ol-map {\n            top: 0;\n            left: 0;\n            right: 0;\n            bottom:0;\n            position: absolute;\n        }\n        ");
-            var map = new ol.Map({
-                target: options.target,
-                keyboardEventTarget: document,
-                loadTilesWhileAnimating: true,
-                loadTilesWhileInteracting: true,
-                controls: ol.control.defaults({ attribution: false }),
-                view: new ol.View({
-                    projection: options.projection,
-                    center: options.center,
-                    zoom: options.zoom
-                }),
-                layers: [
-                    new ol.layer.Tile({
-                        opacity: 0.8,
-                        source: new ol.source.OSM()
-                    })
-                ]
-            });
-            return map;
-        };
-        return MapMaker;
-    }());
-    MapMaker.DEFAULT_OPTIONS = {};
-    exports.MapMaker = MapMaker;
-});
-define("ol3-draw/ol3-button", ["require", "exports", "openlayers", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, common_3) {
+define("ol3-draw/ol3-button", ["require", "exports", "openlayers", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, common_2) {
     "use strict";
     var Button = (function (_super) {
         __extends(Button, _super);
         function Button(options) {
             var _this = _super.call(this, options) || this;
             _this.options = options;
-            var button = common_3.html("<input type=\"button\" value=\"" + options.label + "\" />");
+            _this.cssin();
+            options.element.className = options.className + " " + options.position;
+            var button = common_2.html("<input type=\"button\" value=\"" + options.label + "\" />");
             button.title = options.title;
             options.element.appendChild(button);
             _this.set("active", false);
@@ -788,22 +756,20 @@ define("ol3-draw/ol3-button", ["require", "exports", "openlayers", "bower_compon
             return _this;
         }
         Button.create = function (options) {
-            common_3.cssin("ol-button", "\n            .ol-button {\n                position: absolute;\n                background: #ccc;\n            }\n            .ol-button.active {\n                background-color: white;\n            }\n            .ol-button.top {\n                top: 0.5em;\n            }\n            .ol-button.top-1 {\n                top: 1.5em;\n            }\n            .ol-button.top-2 {\n                top: 2.5em;\n            }\n            .ol-button.top-3 {\n                top: 3.5em;\n            }\n            .ol-button.top-4 {\n                top: 4.5em;\n            }\n            .ol-button.right {\n                right: 0.5em;\n            }\n            .ol-button.right-1 {\n                right: 1.5em;\n            }\n            .ol-button.right-2 {\n                right: 2.5em;\n            }\n            .ol-button.right-3 {\n                right: 3.5em;\n            }\n            .ol-button.right-4 {\n                right: 4.5em;\n            }\n            .ol-button.right-5 {\n                right: 5.5em;\n            }\n            .ol-button.right-6 {\n                right: 6.5em;\n            }\n            .ol-button input[type=\"button\"] {\n                background: transparent;\n                border: none;\n                width: 2em;\n                height: 2em;\n            }\n        ");
-            options = common_3.mixin(common_3.mixin({}, Button.DEFAULT_OPTIONS), options);
+            options = common_2.mixin(common_2.mixin({}, Button.DEFAULT_OPTIONS), options);
             if (!options.element) {
                 options.element = document.createElement("div");
                 document.body.appendChild(options.element);
-                options.element.className = options.className;
             }
             if (!options.target) {
                 options.target = document.createElement("div");
                 document.body.appendChild(options.target);
             }
-            if (options.render) {
-                throw "create a sub-class to override render";
-            }
-            options.element.className = options.className;
             return new Button(options);
+        };
+        Button.prototype.cssin = function () {
+            var className = this.options.className;
+            common_2.cssin(className, "\n            ." + className + " {\n                position: absolute;\n                background: #ccc;\n            }\n            ." + className + ".active {\n                background-color: white;\n            }\n            ." + className + ".top {\n                top: 0.5em;\n            }\n            ." + className + ".top-1 {\n                top: 1.5em;\n            }\n            ." + className + ".top-2 {\n                top: 2.5em;\n            }\n            ." + className + ".top-3 {\n                top: 3.5em;\n            }\n            ." + className + ".top-4 {\n                top: 4.5em;\n            }\n            ." + className + ".right {\n                right: 0.5em;\n            }\n            ." + className + ".right-1 {\n                right: 1.5em;\n            }\n            ." + className + ".right-2 {\n                right: 2.5em;\n            }\n            ." + className + ".right-3 {\n                right: 3.5em;\n            }\n            ." + className + ".right-4 {\n                right: 4.5em;\n            }\n            ." + className + ".right-5 {\n                right: 5.5em;\n            }\n            ." + className + ".right-6 {\n                right: 6.5em;\n            }\n            ." + className + " input[type=\"button\"] {\n                background: transparent;\n                border: none;\n                width: 2em;\n                height: 2em;\n            }\n        ");
         };
         Button.prototype.setMap = function (map) {
             var _this = this;
@@ -819,14 +785,15 @@ define("ol3-draw/ol3-button", ["require", "exports", "openlayers", "bower_compon
         return Button;
     }(ol.control.Control));
     Button.DEFAULT_OPTIONS = {
-        className: "ol-button top right",
+        className: "ol-button",
+        position: "top right",
         label: "Button",
         title: "Button",
         eventName: "click:button"
     };
     exports.Button = Button;
 });
-define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, common_4) {
+define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, common_3) {
     "use strict";
     function stopInteraction(map, type) {
         map.getInteractions()
@@ -848,15 +815,15 @@ define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "bower_componen
         function Modify(options) {
             var _this = _super.call(this, options) || this;
             _this.options = options;
-            var button = common_4.html("<input type=\"button\" value=\"" + options.label + "\" />");
+            var button = common_3.html("<input type=\"button\" value=\"" + options.label + "\" />");
             button.title = options.title;
             options.element.appendChild(button);
             button.addEventListener("click", function () { return _this.dispatchEvent("button-click"); });
             return _this;
         }
         Modify.create = function (options) {
-            options = common_4.mixin(common_4.mixin({}, Modify.DEFAULT_OPTIONS), options);
-            common_4.cssin("ol-edit", "\n            .ol-edit {\n                position: absolute;\n                background-color: #ccc;\n            }\n            .ol-edit.active {\n                background-color: white;\n            }\n            .ol-edit.top {\n                top: 0.5em;\n            }\n            .ol-edit.top-1 {\n                top: 1.5em;\n            }\n            .ol-edit.top-2 {\n                top: 2.5em;\n            }\n            .ol-edit.top-3 {\n                top: 3.5em;\n            }\n            .ol-edit.top-4 {\n                top: 4.5em;\n            }\n            .ol-edit.right {\n                right: 0.5em;\n            }\n            .ol-edit.right-1 {\n                right: 1.5em;\n            }\n            .ol-edit.right-2 {\n                right: 2.5em;\n            }\n            .ol-edit.right-3 {\n                right: 3.5em;\n            }\n            .ol-edit.right-4 {\n                right: 4.5em;\n            }\n            .ol-edit input[type=\"button\"] {\n                background: transparent;\n                border: none;\n                width: 2em;\n                height: 2em;\n            }\n        ");
+            options = common_3.mixin(common_3.mixin({}, Modify.DEFAULT_OPTIONS), options);
+            common_3.cssin("ol-edit", "\n            .ol-edit {\n                position: absolute;\n                background-color: #ccc;\n            }\n            .ol-edit.active {\n                background-color: white;\n            }\n            .ol-edit.top {\n                top: 0.5em;\n            }\n            .ol-edit.top-1 {\n                top: 1.5em;\n            }\n            .ol-edit.top-2 {\n                top: 2.5em;\n            }\n            .ol-edit.top-3 {\n                top: 3.5em;\n            }\n            .ol-edit.top-4 {\n                top: 4.5em;\n            }\n            .ol-edit.right {\n                right: 0.5em;\n            }\n            .ol-edit.right-1 {\n                right: 1.5em;\n            }\n            .ol-edit.right-2 {\n                right: 2.5em;\n            }\n            .ol-edit.right-3 {\n                right: 3.5em;\n            }\n            .ol-edit.right-4 {\n                right: 4.5em;\n            }\n            .ol-edit input[type=\"button\"] {\n                background: transparent;\n                border: none;\n                width: 2em;\n                height: 2em;\n            }\n        ");
             if (!options.element) {
                 options.element = document.createElement("div");
                 document.body.appendChild(options.element);
@@ -895,7 +862,116 @@ define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "bower_componen
     };
     exports.Modify = Modify;
 });
-define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "ol3-draw/ol3-draw", "ol3-draw/ol3-edit", "ol3-draw/examples/mapmaker"], function (require, exports, ol, ol3_button_1, ol3_draw_1, ol3_edit_1, mapmaker_1) {
+define("ol3-draw/ol3-translate", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, ol3_button_1, common_4) {
+    "use strict";
+    function stopInteraction(map, type) {
+        map.getInteractions()
+            .getArray()
+            .filter(function (i) { return i instanceof type; })
+            .forEach(function (t) { return t.setActive(false); });
+    }
+    function addInteraction(map, action) {
+        map.addInteraction(action);
+        action.on("change:active", function () {
+            map.dispatchEvent({
+                type: "interaction-active",
+                interaction: action
+            });
+        });
+    }
+    var Translate = (function (_super) {
+        __extends(Translate, _super);
+        function Translate() {
+            return _super !== null && _super.apply(this, arguments) || this;
+        }
+        Translate.create = function (options) {
+            options = common_4.mixin(common_4.mixin({}, Translate.DEFAULT_OPTIONS), options);
+            if (!options.element) {
+                options.element = document.createElement("div");
+                document.body.appendChild(options.element);
+            }
+            if (!options.target) {
+                options.target = document.createElement("div");
+                document.body.appendChild(options.target);
+            }
+            return new Translate(options);
+        };
+        Translate.prototype.setMap = function (map) {
+            var _this = this;
+            _super.prototype.setMap.call(this, map);
+            var select = new ol.interaction.Select({ wrapX: false });
+            select.setActive(false);
+            addInteraction(map, select);
+            select.on("change:active", function () {
+                _this.options.element.classList.toggle("active", select.getActive());
+            });
+            select.on("select", function (args) {
+                var translate = new ol.interaction.Translate({
+                    features: select.getFeatures()
+                });
+                translate.setActive(false);
+                addInteraction(map, translate);
+                translate.setActive(true);
+                select.on("change:active", function () {
+                    if (!select.getActive() && translate) {
+                        translate.setActive(false);
+                        map.removeInteraction(translate);
+                        translate = null;
+                    }
+                });
+            });
+            this.on("change:active", function () {
+                stopInteraction(map, ol.interaction.Modify);
+                stopInteraction(map, ol.interaction.Draw);
+                select.setActive(!select.getActive());
+            });
+        };
+        return Translate;
+    }(ol3_button_1.Button));
+    Translate.DEFAULT_OPTIONS = {
+        className: "ol-translate",
+        position: "top right",
+        label: "XY",
+        title: "Translate",
+        eventName: "translate-feature"
+    };
+    exports.Translate = Translate;
+});
+define("ol3-draw/mapmaker", ["require", "exports", "openlayers", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, common_5) {
+    "use strict";
+    var MapMaker = (function () {
+        function MapMaker() {
+        }
+        MapMaker.create = function (options) {
+            options = common_5.mixin(common_5.mixin({}, MapMaker.DEFAULT_OPTIONS), options);
+            options.target.classList.add("ol-map");
+            common_5.cssin("mapmaker", "\n        .ol-map {\n            top: 0;\n            left: 0;\n            right: 0;\n            bottom:0;\n            position: absolute;\n        }\n        ");
+            var map = new ol.Map({
+                target: options.target,
+                keyboardEventTarget: document,
+                loadTilesWhileAnimating: true,
+                loadTilesWhileInteracting: true,
+                controls: ol.control.defaults({ attribution: false }),
+                view: new ol.View({
+                    projection: options.projection,
+                    center: options.center,
+                    zoom: options.zoom
+                }),
+                layers: [
+                    new ol.layer.Tile({
+                        opacity: 0.8,
+                        source: new ol.source.OSM()
+                    })
+                ]
+            });
+            return map;
+        };
+        return MapMaker;
+    }());
+    MapMaker.DEFAULT_OPTIONS = {};
+    exports.MapMaker = MapMaker;
+});
+define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "ol3-draw/ol3-draw", "ol3-draw/ol3-edit", "ol3-draw/ol3-translate", "ol3-draw/mapmaker"], function (require, exports, ol, ol3_button_2, ol3_draw_1, ol3_edit_1, ol3_translate_1, mapmaker_1) {
     "use strict";
     function stopInteraction(map, type) {
         map.getInteractions()
@@ -922,8 +998,9 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "ol3-d
         map.addControl(ol3_draw_1.Draw.create({ geometryType: "MultiLineString", label: "▬", className: "ol-draw right-4 top" }));
         map.addControl(ol3_draw_1.Draw.create({ geometryType: "Point", label: "●", className: "ol-edit right-2 top" }));
         map.addControl(ol3_edit_1.Modify.create({ label: "Δ", className: "ol-edit right top" }));
-        map.addControl(ol3_button_1.Button.create({ label: "X", title: "Delete", className: "ol-button top-2 right-2", eventName: "delete-drawing" }));
-        map.addControl(ol3_button_1.Button.create({ label: "0", title: "Clear", className: "ol-button top-2 right", eventName: "clear-drawings" }));
+        map.addControl(ol3_translate_1.Translate.create({ label: "↔", position: "right-4 top-2" }));
+        map.addControl(ol3_button_2.Button.create({ label: "␡", title: "Delete", position: "right-2 top-2", eventName: "delete-drawing" }));
+        map.addControl(ol3_button_2.Button.create({ label: "⎚", title: "Clear", position: "right top-2", eventName: "clear-drawings" }));
         {
             var select_1 = new ol.interaction.Select();
             select_1.setActive(false);
@@ -941,8 +1018,6 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "ol3-d
                         }
                     });
                 }); });
-                select_1.setActive(false);
-                select_1.setActive(true);
             });
             map.addInteraction(select_1);
             map.on("delete-drawing", function (args) {
@@ -962,13 +1037,13 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "ol3-d
                 .getArray()
                 .filter(function (i) { return i instanceof ol3_draw_1.Draw; })
                 .forEach(function (t) { return t.options.layers.forEach(function (l) { return l.getSource().clear(); }); });
-            stopControl(map, ol3_button_1.Button);
+            stopControl(map, ol3_button_2.Button);
             stopInteraction(map, ol.interaction.Draw);
             stopInteraction(map, ol.interaction.Modify);
             stopInteraction(map, ol.interaction.Select);
         });
         map.on("interaction-active", function (args) {
-            stopControl(map, ol3_button_1.Button);
+            stopControl(map, ol3_button_2.Button);
             if (args.interaction instanceof ol3_draw_1.Draw) {
                 if (args.interaction.getActive()) {
                     stopInteraction(map, ol.interaction.Modify);

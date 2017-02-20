@@ -196,23 +196,11 @@ declare module "index" {
 declare module "ol3-draw/examples/index" {
     export function run(): void;
 }
-declare module "ol3-draw/examples/mapmaker" {
-    import ol = require("openlayers");
-    export class MapMaker {
-        static DEFAULT_OPTIONS: olx.MapOptions;
-        static create(options: {
-            target: Element;
-            center: [number, number];
-            projection: string;
-            zoom: number;
-            basemap: string;
-        }): ol.Map;
-    }
-}
 declare module "ol3-draw/ol3-button" {
     import ol = require("openlayers");
     export interface IOptions extends olx.control.ControlOptions {
         className?: string;
+        position?: string;
         label?: string;
         title?: string;
         eventName?: string;
@@ -222,6 +210,7 @@ declare module "ol3-draw/ol3-button" {
         static create(options?: IOptions): Button;
         options: IOptions;
         constructor(options: IOptions);
+        cssin(): void;
         setMap(map: ol.Map): void;
     }
 }
@@ -238,6 +227,30 @@ declare module "ol3-draw/ol3-edit" {
         options: EditControlOptions;
         constructor(options: EditControlOptions);
         setMap(map: ol.Map): void;
+    }
+}
+declare module "ol3-draw/ol3-translate" {
+    import ol = require("openlayers");
+    import { Button, IOptions as IButtonOptions } from "ol3-draw/ol3-button";
+    export interface IOptions extends IButtonOptions {
+    }
+    export class Translate extends Button {
+        static DEFAULT_OPTIONS: IOptions;
+        static create(options?: IOptions): Translate;
+        setMap(map: ol.Map): void;
+    }
+}
+declare module "ol3-draw/mapmaker" {
+    import ol = require("openlayers");
+    export class MapMaker {
+        static DEFAULT_OPTIONS: olx.MapOptions;
+        static create(options: {
+            target: Element;
+            center: [number, number];
+            projection: string;
+            zoom: number;
+            basemap: string;
+        }): ol.Map;
     }
 }
 declare module "ol3-draw/examples/ol3-draw" {

@@ -5,7 +5,8 @@ import { cssin, mixin } from "ol3-fun/ol3-fun/common";
 import { Button } from "../ol3-button";
 import { Draw } from "../ol3-draw";
 import { Modify } from "../ol3-edit";
-import { MapMaker } from "./mapmaker";
+import { Translate } from "../ol3-translate";
+import { MapMaker } from "../mapmaker";
 
 function stopInteraction(map: ol.Map, type: any) {
     map.getInteractions()
@@ -36,8 +37,10 @@ export function run() {
     map.addControl(Draw.create({ geometryType: "MultiLineString", label: "▬", className: "ol-draw right-4 top" }));
     map.addControl(Draw.create({ geometryType: "Point", label: "●", className: "ol-edit right-2 top" }));
     map.addControl(Modify.create({ label: "Δ", className: "ol-edit right top" }));
-    map.addControl(Button.create({ label: "X", title: "Delete", className: "ol-button top-2 right-2", eventName: "delete-drawing" }));
-    map.addControl(Button.create({ label: "0", title: "Clear", className: "ol-button top-2 right", eventName: "clear-drawings" }));
+
+    map.addControl(Translate.create({ label: "↔", position: "right-4 top-2" }));
+    map.addControl(Button.create({ label: "␡", title: "Delete", position: "right-2 top-2", eventName: "delete-drawing" }));
+    map.addControl(Button.create({ label: "⎚", title: "Clear", position: "right top-2", eventName: "clear-drawings" }));
 
     {
         let select = new ol.interaction.Select();
@@ -56,8 +59,6 @@ export function run() {
                         }
                     })
                 }));
-            select.setActive(false);
-            select.setActive(true);
         });
 
         map.addInteraction(select);
