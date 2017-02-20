@@ -2,50 +2,23 @@ import ol = require("openlayers");
 
 import { StyleConverter } from "ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer";
 import { cssin, mixin } from "ol3-fun/ol3-fun/common";
+import { Button } from "../ol3-button";
 import { Draw } from "../ol3-draw";
 import { Modify } from "../ol3-edit";
+import { MapMaker } from "./mapmaker";
 
-class MapMaker {
-    static DEFAULT_OPTIONS: olx.MapOptions = {
-    }
-    static create(options: {
-        target: Element;
-        center: [number, number];
-        projection: string;
-        zoom: number;
-        basemap: string;
-    }) {
-        options = mixin(mixin({}, MapMaker.DEFAULT_OPTIONS), options);
+function stopInteraction(map: ol.Map, type: any) {
+    map.getInteractions()
+        .getArray()
+        .filter(i => i instanceof type)
+        .forEach(t => t.setActive(false));
+}
 
-        options.target.classList.add("ol-map");
-        cssin("mapmaker", `
-        .ol-map {
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom:0;
-            position: absolute;
-        }
-        `);
-        let map = new ol.Map({
-            target: options.target,
-            keyboardEventTarget: document,
-            loadTilesWhileAnimating: true,
-            loadTilesWhileInteracting: true,
-            controls: ol.control.defaults({ attribution: false }),
-            view: new ol.View({
-                projection: options.projection,
-                center: options.center,
-                zoom: options.zoom
-            }),
-            layers: [
-                new ol.layer.Tile({
-                    opacity: 0.8,
-                    source: new ol.source.OSM()
-                })]
-        });
-        return map;
-    }
+function stopControl(map: ol.Map, type: any) {
+    map.getControls()
+        .getArray()
+        .filter(i => i instanceof type)
+        .forEach(t => t.set("active", false));
 }
 
 export function run() {
@@ -59,8 +32,75 @@ export function run() {
     });
 
     //▲ ▬ ◇ ● ◯ ▧ ★
-    map.addControl(Draw.create({ geometryType: "Point", label: "●" }));
-    map.addControl(Draw.create({ geometryType: "MultiLineString", label: "▬", className: "ol-draw right-2 top" }));
-    map.addControl(Draw.create({ geometryType: "Polygon", label: "▧", className: "ol-draw right-4 top" }));
-    map.addControl(Modify.create({ label: "Δ", className: "ol-draw right top-2" }));
+    map.addControl(Draw.create({ geometryType: "Polygon", label: "▧", className: "ol-draw right-6 top" }));
+    map.addControl(Draw.create({ geometryType: "MultiLineString", label: "▬", className: "ol-draw right-4 top" }));
+    map.addControl(Draw.create({ geometryType: "Point", label: "●", className: "ol-edit right-2 top" }));
+    map.addControl(Modify.create({ label: "Δ", className: "ol-edit right top" }));
+    map.addControl(Button.create({ label: "X", title: "Delete", className: "ol-button top-2 right-2", eventName: "delete-drawing" }));
+    map.addControl(Button.create({ label: "0", title: "Clear", className: "ol-button top-2 right", eventName: "clear-drawings" }));
+
+    {
+        let select = new ol.interaction.Select();
+        select.setActive(false);
+
+        select.on("select", (args: ol.interaction.SelectEvent) => {
+            let features = args.selected;
+            map.getControls()
+                .getArray()
+                .filter(i => i instanceof Draw)
+                .forEach(t => (<Draw>t).options.layers.forEach(l => {
+                    features.forEach(f => {
+                        try {
+                            l.getSource().removeFeature(f);
+                        } catch (ex) {
+                        }
+                    })
+                }));
+            select.setActive(false);
+            select.setActive(true);
+        });
+
+        map.addInteraction(select);
+
+        map.on("delete-drawing", (args: {
+            control: ol.control.Control
+        }) => {
+            if (args.control.get("active")) {
+                stopInteraction(map, ol.interaction.Draw);
+                stopInteraction(map, ol.interaction.Modify);
+                stopInteraction(map, ol.interaction.Select);
+                select.setActive(true);
+            } else {
+                select.setActive(false);
+            }
+        });
+    }
+
+    map.on("clear-drawings", () => {
+        map.getControls()
+            .getArray()
+            .filter(i => i instanceof Draw)
+            .forEach(t => (<Draw>t).options.layers.forEach(l => l.getSource().clear()));
+        stopControl(map, Button);
+        stopInteraction(map, ol.interaction.Draw);
+        stopInteraction(map, ol.interaction.Modify);
+        stopInteraction(map, ol.interaction.Select);
+    });
+
+    map.on("interaction-active", (args: { interaction: ol.interaction.Interaction }) => {
+        stopControl(map, Button);
+
+        if (args.interaction instanceof Draw) {
+            if (args.interaction.getActive()) {
+                stopInteraction(map, ol.interaction.Modify);
+                stopInteraction(map, ol.interaction.Select);
+            }
+        }
+        if (args.interaction instanceof ol.interaction.Select) {
+            if (args.interaction.getActive()) {
+                stopInteraction(map, ol.interaction.Draw);
+                stopInteraction(map, ol.interaction.Modify);
+            }
+        }
+    })
 }

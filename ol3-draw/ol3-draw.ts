@@ -11,6 +11,16 @@ function stopInteraction(map: ol.Map, type: any) {
         .forEach(t => t.setActive(false));
 }
 
+function addInteraction(map: ol.Map, action: ol.interaction.Interaction) {
+    map.addInteraction(action);
+    action.on("change:active", () => {
+        map.dispatchEvent({
+            type: "interaction-active",
+            interaction: action
+        });
+    });
+}
+
 export interface DrawControlOptions extends olx.control.ControlOptions {
     className?: string;
     label?: string;
@@ -31,6 +41,10 @@ export class Draw extends ol.control.Control {
         cssin("ol-draw", `
             .ol-draw {
                 position: absolute;
+                background: #ccc;
+            }
+            .ol-draw.active {
+                background-color: white;
             }
             .ol-draw.top {
                 top: 0.5em;
@@ -62,7 +76,15 @@ export class Draw extends ol.control.Control {
             .ol-draw.right-4 {
                 right: 4.5em;
             }
+            .ol-draw.right-5 {
+                right: 5.5em;
+            }
+            .ol-draw.right-6 {
+                right: 6.5em;
+            }
             .ol-draw input[type="button"] {
+                background: transparent;
+                border: none;
                 width: 2em;
                 height: 2em;
             }
@@ -147,8 +169,12 @@ export class Draw extends ol.control.Control {
             type: options.geometryType,
             source: source
         });
+        draw.setActive(false);
 
-        this.getMap().addInteraction(draw);
+        draw.on("change:active", () =>
+            this.options.element.classList.toggle("active", draw.getActive()));
+
+        addInteraction(this.getMap(), draw);
         return draw;
     }
 

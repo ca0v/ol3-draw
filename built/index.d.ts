@@ -185,11 +185,45 @@ declare module "ol3-draw/ol3-draw" {
     }
 }
 declare module "index" {
+    /**
+     * Consider ways of breaking from this pattern of just proxying
+     * and provides some useful out-of-the-box configurations
+     * e.g. create() puts all available control in a top-right toolbar
+     */
     import Draw = require("ol3-draw/ol3-draw");
     export = Draw;
 }
 declare module "ol3-draw/examples/index" {
     export function run(): void;
+}
+declare module "ol3-draw/examples/mapmaker" {
+    import ol = require("openlayers");
+    export class MapMaker {
+        static DEFAULT_OPTIONS: olx.MapOptions;
+        static create(options: {
+            target: Element;
+            center: [number, number];
+            projection: string;
+            zoom: number;
+            basemap: string;
+        }): ol.Map;
+    }
+}
+declare module "ol3-draw/ol3-button" {
+    import ol = require("openlayers");
+    export interface IOptions extends olx.control.ControlOptions {
+        className?: string;
+        label?: string;
+        title?: string;
+        eventName?: string;
+    }
+    export class Button extends ol.control.Control {
+        static DEFAULT_OPTIONS: IOptions;
+        static create(options?: IOptions): Button;
+        options: IOptions;
+        constructor(options: IOptions);
+        setMap(map: ol.Map): void;
+    }
 }
 declare module "ol3-draw/ol3-edit" {
     import ol = require("openlayers");
@@ -202,7 +236,6 @@ declare module "ol3-draw/ol3-edit" {
         static DEFAULT_OPTIONS: EditControlOptions;
         static create(options?: EditControlOptions): Modify;
         options: EditControlOptions;
-        active: boolean;
         constructor(options: EditControlOptions);
         setMap(map: ol.Map): void;
     }

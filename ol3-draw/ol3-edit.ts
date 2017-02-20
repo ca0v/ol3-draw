@@ -8,6 +8,16 @@ function stopInteraction(map: ol.Map, type: any) {
         .forEach(t => t.setActive(false));
 }
 
+function addInteraction(map: ol.Map, action: ol.interaction.Interaction) {
+    map.addInteraction(action);
+    action.on("change:active", () => {
+        map.dispatchEvent({
+            type: "interaction-active",
+            interaction: action
+        });
+    });
+}
+
 export interface EditControlOptions extends olx.control.ControlOptions {
     className?: string;
     label?: string;
@@ -27,6 +37,10 @@ export class Modify extends ol.control.Control {
         cssin("ol-edit", `
             .ol-edit {
                 position: absolute;
+                background-color: #ccc;
+            }
+            .ol-edit.active {
+                background-color: white;
             }
             .ol-edit.top {
                 top: 0.5em;
@@ -59,6 +73,8 @@ export class Modify extends ol.control.Control {
                 right: 4.5em;
             }
             .ol-edit input[type="button"] {
+                background: transparent;
+                border: none;
                 width: 2em;
                 height: 2em;
             }
@@ -74,7 +90,6 @@ export class Modify extends ol.control.Control {
     }
 
     public options: EditControlOptions;
-    public active: boolean;
 
     constructor(options: EditControlOptions) {
         super(options);
@@ -83,12 +98,8 @@ export class Modify extends ol.control.Control {
         let button = html(`<input type="button" value="${options.label}" />`);
         button.title = options.title;
         options.element.appendChild(button);
-        this.active = false;
 
-        button.addEventListener("click", () => {
-            this.active = !this.active;
-            this.dispatchEvent("change:active");
-        });
+        button.addEventListener("click", () => this.dispatchEvent("button-click"));
     }
 
     setMap(map: ol.Map) {
@@ -99,7 +110,8 @@ export class Modify extends ol.control.Control {
         });
         select.setActive(false);
 
-        map.addInteraction(select);
+        addInteraction(map, select);
+        select.on("change:active", () => this.options.element.classList.toggle("active", select.getActive()));
 
         select.on("select", (args: {
             deselected: ol.Feature[],
@@ -108,14 +120,14 @@ export class Modify extends ol.control.Control {
             let modify = new ol.interaction.Modify({
                 features: select.getFeatures()
             });
-            map.addInteraction(modify);
+            addInteraction(map, modify);
             modify.setActive(true);
         })
 
-        this.on("change:active", () => {
+        this.on("button-click", () => {
             stopInteraction(map, ol.interaction.Modify);
             stopInteraction(map, ol.interaction.Draw);
-            select.setActive(this.active);
+            select.setActive(!select.getActive());
         });
     }
 }
