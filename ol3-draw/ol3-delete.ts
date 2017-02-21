@@ -71,11 +71,11 @@ export class Delete extends Button {
                 select.setActive(true);
 
                 select.on("select", (args: ol.interaction.SelectEvent) => {
-                    let features = select.getFeatures();
-                    // how to remove these features from the associated layer?
-                    let vectorLayers = map.getLayers().getArray().filter(l => l instanceof ol.layer.Vector);
-                    // Oh! This is how you remove styling...not remove from the map.interactions :)
-                    features.clear();
+                    args.selected.forEach(f => {
+                        let l = select.getLayer(f);
+                        l.getSource().removeFeature(f);
+                    });
+                    select.getFeatures().clear();
                 });
 
 
