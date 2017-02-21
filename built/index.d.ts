@@ -214,6 +214,18 @@ declare module "ol3-draw/ol3-button" {
         setMap(map: ol.Map): void;
     }
 }
+declare module "ol3-draw/ol3-delete" {
+    import ol = require("openlayers");
+    import { Button, IOptions as IButtonOptions } from "ol3-draw/ol3-button";
+    export interface DeleteControlOptions extends IButtonOptions {
+    }
+    export class Delete extends Button {
+        static DEFAULT_OPTIONS: DeleteControlOptions;
+        options: DeleteControlOptions;
+        static create(options?: DeleteControlOptions): Delete;
+        setMap(map: ol.Map): void;
+    }
+}
 declare module "ol3-draw/ol3-edit" {
     import ol = require("openlayers");
     import { Button, IOptions as IButtonOptions } from "ol3-draw/ol3-button";
