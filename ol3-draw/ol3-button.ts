@@ -2,6 +2,18 @@ import ol = require("openlayers");
 import { cssin, html, mixin } from "ol3-fun/ol3-fun/common";
 import { StyleConverter } from "ol3-symbolizer";
 
+function range(n: number) {
+    let result = new Array(n);
+    for (let i = 0; i < n; i++) result[i] = i;
+    return <number[]>result;
+}
+
+function pair<A, B>(a1: A[], a2: B[]) {
+    let result: Array<[A, B]> = [];
+    a1.forEach(v1 => a2.forEach(v2 => result.push([v1, v2])));
+    return result;
+}
+
 export interface IOptions extends olx.control.ControlOptions {
     className?: string;
     position?: string;
@@ -59,6 +71,9 @@ export class Button extends ol.control.Control {
 
     cssin() {
         let className = this.options.className;
+        let positions = pair("top left right bottom".split(" "), range(24))
+            .map(pos => `.${className}.${pos[0] + (-pos[1] || '')} { ${pos[0]}:${0.5 + pos[1]}em; }`);
+
         cssin(className, `
             .${className} {
                 position: absolute;
@@ -67,48 +82,13 @@ export class Button extends ol.control.Control {
             .${className}.active {
                 background-color: white;
             }
-            .${className}.top {
-                top: 0.5em;
-            }
-            .${className}.top-1 {
-                top: 1.5em;
-            }
-            .${className}.top-2 {
-                top: 2.5em;
-            }
-            .${className}.top-3 {
-                top: 3.5em;
-            }
-            .${className}.top-4 {
-                top: 4.5em;
-            }
-            .${className}.right {
-                right: 0.5em;
-            }
-            .${className}.right-1 {
-                right: 1.5em;
-            }
-            .${className}.right-2 {
-                right: 2.5em;
-            }
-            .${className}.right-3 {
-                right: 3.5em;
-            }
-            .${className}.right-4 {
-                right: 4.5em;
-            }
-            .${className}.right-5 {
-                right: 5.5em;
-            }
-            .${className}.right-6 {
-                right: 6.5em;
-            }
             .${className} input[type="button"] {
                 background: transparent;
                 border: none;
                 width: 2em;
                 height: 2em;
             }
+            ${positions.join('\n')}
         `);
     }
 

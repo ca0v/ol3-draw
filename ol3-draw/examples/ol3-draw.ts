@@ -34,17 +34,16 @@ export function run() {
     });
 
     //▲ ▬ ◇ ● ◯ ▧ ★
-    map.addControl(Draw.create({ geometryType: "Polygon", label: "▧", className: "ol-draw right-6 top" }));
-    map.addControl(Draw.create({ geometryType: "MultiLineString", label: "▬", className: "ol-draw right-4 top" }));
-    map.addControl(Draw.create({ geometryType: "Point", label: "●", className: "ol-edit right-2 top" }));
-    map.addControl(Draw.create({ geometryType: "Circle", label: "◯", className: "ol-edit right top" }));
+    map.addControl(Draw.create({ geometryType: "Polygon", label: "▧", position: "right-10 top" }));
+    map.addControl(Draw.create({ geometryType: "MultiLineString", label: "▬", position: "right-8 top" }));
+    map.addControl(Draw.create({ geometryType: "Point", label: "●", position: "right-6 top" }));
+    map.addControl(Draw.create({ geometryType: "Circle", label: "◯", position: "right-4 top" }));    
+    map.addControl(Translate.create({ label: "↔", position: "right-2 top" }));
+    map.addControl(Modify.create({ label: "Δ", position: "right top" }));
 
-    map.addControl(Delete.create({ label: "␡", position: "right-2 top-2"}));
-    map.addControl(Button.create({ label: "⎚", title: "Clear", position: "right top-2", eventName: "clear-drawings" }));
-
-    map.addControl(Translate.create({ label: "↔", position: "right-4 top-4" }));
-    map.addControl(Modify.create({ label: "Δ", position: "right-2 top-4" }));
-    map.addControl(Button.create({ label: "💾", position: "right top-4" }));
+    map.addControl(Delete.create({ label: "␡", position: "right-4 top-2"}));
+    map.addControl(Button.create({ label: "⎚", title: "Clear", position: "right-2 top-2", eventName: "clear-drawings" }));
+    map.addControl(Button.create({ label: "💾", position: "right top-2" }));
 
     map.on("clear-drawings", () => {
         map.getControls()

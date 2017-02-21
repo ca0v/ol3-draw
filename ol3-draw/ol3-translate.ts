@@ -1,6 +1,6 @@
 import ol = require("openlayers");
 import { Button, IOptions as IButtonOptions } from "./ol3-button";
-import { cssin, html, mixin } from "ol3-fun/ol3-fun/common";
+import { html, mixin } from "ol3-fun/ol3-fun/common";
 
 function stopInteraction(map: ol.Map, type: any) {
     map.getInteractions()

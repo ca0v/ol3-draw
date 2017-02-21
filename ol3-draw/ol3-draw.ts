@@ -1,6 +1,7 @@
 import ol = require("openlayers");
-import { cssin, html, mixin } from "ol3-fun/ol3-fun/common";
+import { html, mixin } from "ol3-fun/ol3-fun/common";
 import { StyleConverter } from "ol3-symbolizer";
+import { Button, IOptions as IButtonOptions } from "./ol3-button";
 
 const converter = new StyleConverter();
 
@@ -21,79 +22,23 @@ function addInteraction(map: ol.Map, action: ol.interaction.Interaction) {
     });
 }
 
-export interface DrawControlOptions extends olx.control.ControlOptions {
-    className?: string;
-    label?: string;
-    title?: string;
+export interface DrawControlOptions extends IButtonOptions {
     layers?: Array<ol.layer.Vector>;
     geometryType?: "Point" | "LineString" | "LinearRing" | "Polygon" | "MultiPoint" | "MultiLineString" | "MultiPolygon" | "GeometryCollection" | "Circle";
 }
 
-export class Draw extends ol.control.Control {
+export class Draw extends Button {
     static DEFAULT_OPTIONS: DrawControlOptions = {
-        className: "ol-draw top right",
+        className: "ol-draw",
         geometryType: "Point",
         label: "Draw",
         title: "Draw"
     }
 
-    static create(options?: DrawControlOptions) {
-        cssin("ol-draw", `
-            .ol-draw {
-                position: absolute;
-                background: #ccc;
-            }
-            .ol-draw.active {
-                background-color: white;
-            }
-            .ol-draw.top {
-                top: 0.5em;
-            }
-            .ol-draw.top-1 {
-                top: 1.5em;
-            }
-            .ol-draw.top-2 {
-                top: 2.5em;
-            }
-            .ol-draw.top-3 {
-                top: 3.5em;
-            }
-            .ol-draw.top-4 {
-                top: 4.5em;
-            }
-            .ol-draw.right {
-                right: 0.5em;
-            }
-            .ol-draw.right-1 {
-                right: 1.5em;
-            }
-            .ol-draw.right-2 {
-                right: 2.5em;
-            }
-            .ol-draw.right-3 {
-                right: 3.5em;
-            }
-            .ol-draw.right-4 {
-                right: 4.5em;
-            }
-            .ol-draw.right-5 {
-                right: 5.5em;
-            }
-            .ol-draw.right-6 {
-                right: 6.5em;
-            }
-            .ol-draw input[type="button"] {
-                background: transparent;
-                border: none;
-                width: 2em;
-                height: 2em;
-            }
-        `);
-        options = mixin(mixin({}, Draw.DEFAULT_OPTIONS), options);
+    public options: DrawControlOptions;
 
-        if (!options.className) {
-            options.className = 'ol-draw top right';
-        }
+    static create(options?: DrawControlOptions) {
+        options = mixin(mixin({}, Draw.DEFAULT_OPTIONS), options);
 
         if (!options.element) {
             options.element = document.createElement("div");
@@ -101,58 +46,10 @@ export class Draw extends ol.control.Control {
             options.element.className = options.className;
         }
 
-        if (!options.target) {
-            options.target = document.createElement("div");
-            document.body.appendChild(options.target);
-        }
-
-        if (options.render) {
-            throw "create a sub-class to override render";
-        }
-
-        if (!options.geometryType) {
-            options.geometryType = "Point";
-        }
-
-        options.element.className = options.className;
         return new Draw(options);
     }
 
-    public options: DrawControlOptions;
-
     public interactions: { [name: string]: ol.interaction.Draw };
-
-    constructor(options: DrawControlOptions) {
-        super(options);
-        this.options = options;
-
-        this.interactions = {};
-
-        let button = html(`<input type="button" value="${options.label}" />`);
-        button.title = options.title;
-        options.element.appendChild(button);
-        button.addEventListener("click", () => {
-            let interaction = this.interactions[options.geometryType];
-            let wasDrawing = interaction && interaction.getActive();
-
-            if (this.isDrawing()) {
-                this.stopDrawing();
-            }
-            if (!wasDrawing) {
-                if (!interaction) {
-                    interaction = this.interactions[options.geometryType] = this.createInteraction();
-                }
-                this.stopEditing();
-                interaction.setActive(true);
-            }
-        });
-    }
-
-    private stopEditing() {
-        let map = this.getMap();
-        stopInteraction(map, ol.interaction.Modify);
-        stopInteraction(map, ol.interaction.Select);
-    }
 
     isDrawing() {
         let map = this.getMap();
@@ -178,17 +75,28 @@ export class Draw extends ol.control.Control {
         return draw;
     }
 
-    stopDrawing() {
-        let map = this.getMap();
-        let drawTools = map.getInteractions().getArray()
-            .filter(i => i instanceof ol.interaction.Draw);
-        drawTools.forEach(t => t.setActive(false));
-    }
-
     setMap(map: ol.Map) {
         let options = this.options;
+        this.interactions = {};
 
         super.setMap(map);
+
+        this.on("change:active", () => {
+            let active = this.get("active");
+            let interaction = this.interactions[options.geometryType];
+
+            if (active) {
+                if (!interaction) {
+                    interaction = this.interactions[options.geometryType] = this.createInteraction();
+                }
+                stopInteraction(map, ol.interaction.Select);
+                stopInteraction(map, ol.interaction.Modify);
+                stopInteraction(map, ol.interaction.Draw);
+                interaction.setActive(true);
+            } else {
+                interaction && interaction.setActive(false);
+            }
+        });
 
         let style = [
             {

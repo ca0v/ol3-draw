@@ -160,42 +160,6 @@ declare module "bower_components/ol3-symbolizer/index" {
     import Symbolizer = require("bower_components/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer");
     export = Symbolizer;
 }
-declare module "ol3-draw/ol3-draw" {
-    import ol = require("openlayers");
-    export interface DrawControlOptions extends olx.control.ControlOptions {
-        className?: string;
-        label?: string;
-        title?: string;
-        layers?: Array<ol.layer.Vector>;
-        geometryType?: "Point" | "LineString" | "LinearRing" | "Polygon" | "MultiPoint" | "MultiLineString" | "MultiPolygon" | "GeometryCollection" | "Circle";
-    }
-    export class Draw extends ol.control.Control {
-        static DEFAULT_OPTIONS: DrawControlOptions;
-        static create(options?: DrawControlOptions): Draw;
-        options: DrawControlOptions;
-        interactions: {
-            [name: string]: ol.interaction.Draw;
-        };
-        constructor(options: DrawControlOptions);
-        private stopEditing();
-        isDrawing(): boolean;
-        private createInteraction();
-        stopDrawing(): void;
-        setMap(map: ol.Map): void;
-    }
-}
-declare module "index" {
-    /**
-     * Consider ways of breaking from this pattern of just proxying
-     * and provides some useful out-of-the-box configurations
-     * e.g. create() puts all available control in a top-right toolbar
-     */
-    import Draw = require("ol3-draw/ol3-draw");
-    export = Draw;
-}
-declare module "ol3-draw/examples/index" {
-    export function run(): void;
-}
 declare module "ol3-draw/ol3-button" {
     import ol = require("openlayers");
     export interface IOptions extends olx.control.ControlOptions {
@@ -213,6 +177,37 @@ declare module "ol3-draw/ol3-button" {
         cssin(): void;
         setMap(map: ol.Map): void;
     }
+}
+declare module "ol3-draw/ol3-draw" {
+    import ol = require("openlayers");
+    import { Button, IOptions as IButtonOptions } from "ol3-draw/ol3-button";
+    export interface DrawControlOptions extends IButtonOptions {
+        layers?: Array<ol.layer.Vector>;
+        geometryType?: "Point" | "LineString" | "LinearRing" | "Polygon" | "MultiPoint" | "MultiLineString" | "MultiPolygon" | "GeometryCollection" | "Circle";
+    }
+    export class Draw extends Button {
+        static DEFAULT_OPTIONS: DrawControlOptions;
+        options: DrawControlOptions;
+        static create(options?: DrawControlOptions): Draw;
+        interactions: {
+            [name: string]: ol.interaction.Draw;
+        };
+        isDrawing(): boolean;
+        private createInteraction();
+        setMap(map: ol.Map): void;
+    }
+}
+declare module "index" {
+    /**
+     * Consider ways of breaking from this pattern of just proxying
+     * and provides some useful out-of-the-box configurations
+     * e.g. create() puts all available control in a top-right toolbar
+     */
+    import Draw = require("ol3-draw/ol3-draw");
+    export = Draw;
+}
+declare module "ol3-draw/examples/index" {
+    export function run(): void;
 }
 declare module "ol3-draw/ol3-delete" {
     import ol = require("openlayers");

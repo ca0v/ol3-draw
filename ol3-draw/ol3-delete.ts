@@ -47,43 +47,32 @@ export class Delete extends Button {
 
     setMap(map: ol.Map) {
         super.setMap(map);
-        let select: ol.interaction.Select;
+        let select = new ol.interaction.Select({
+            wrapX: false
+        });
+        select.setActive(false);
+        addInteraction(map, select);
+
+        select.on("select", (args: ol.interaction.SelectEvent) => {
+            args.selected.forEach(f => {
+                let l = select.getLayer(f);
+                l.getSource().removeFeature(f);
+            });
+            select.getFeatures().clear();
+        });
+
+
+        select.on("change:active", () => {
+            this.set("active", select.getActive());
+        });
 
         this.on("change:active", () => {
-
             let active = this.get("active");
             this.options.element.classList.toggle("active", active);
             stopInteraction(map, ol.interaction.Select);
             stopInteraction(map, ol.interaction.Modify);
             stopInteraction(map, ol.interaction.Draw);
-
-            if (select) {
-                select.setActive(false);
-                map.removeInteraction(select);
-                select = null;
-            }
-
-            if (active) {
-                select = new ol.interaction.Select({
-                    wrapX: false
-                });
-                addInteraction(map, select);
-                select.setActive(true);
-
-                select.on("select", (args: ol.interaction.SelectEvent) => {
-                    args.selected.forEach(f => {
-                        let l = select.getLayer(f);
-                        l.getSource().removeFeature(f);
-                    });
-                    select.getFeatures().clear();
-                });
-
-
-                select.on("change:active", () => {
-                    this.set("active", false);
-                });
-
-            }
+            select.setActive(active);
         });
 
     }
