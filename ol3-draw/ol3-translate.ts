@@ -47,7 +47,7 @@ export class Translate extends Button {
             this.options.element.classList.toggle("active", active);
 
             select.setActive(active);
-            if (!active) translate.setActive(false);
+            if (!active) select.getFeatures().clear();
         });
 
     }

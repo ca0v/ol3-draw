@@ -9,6 +9,8 @@ import { Modify } from "../ol3-edit";
 import { Translate } from "../ol3-translate";
 import { MapMaker } from "../mapmaker";
 
+let symbolizer = new StyleConverter();
+
 function stopInteraction(map: ol.Map, type: any) {
     map.getInteractions()
         .getArray()
@@ -45,8 +47,8 @@ export function run() {
     //▲ ▬ ◇ ● ◯ ▧ ★
     Draw.create({ map: map, geometryType: "Polygon", label: "▧", position: "right-10 top" });
     Draw.create({ map: map, geometryType: "MultiLineString", label: "▬", position: "right-8 top" });
-    Draw.create({ map: map, geometryType: "Point", label: "●", position: "right-6 top" });
     Draw.create({ map: map, geometryType: "Circle", label: "◯", position: "right-4 top" });
+    Draw.create({ map: map, geometryType: "Point", label: "●", position: "right-6 top" });
     Translate.create({ map: map, label: "↔", position: "right-2 top" });
     Modify.create({ map: map, label: "Δ", position: "right top" });
 
@@ -56,11 +58,90 @@ export function run() {
     Button.create({ map: map, label: "💾", position: "right top-2", eventName: "save" });
 
     {
+
         let selection = new ol.interaction.Select({
-            multi: false
+            multi: false,
+            style: (feature: ol.Feature, res: number) => {
+
+                let index = selection.getFeatures().getArray().indexOf(feature);
+
+                switch (feature.getGeometry().getType()) {
+                    case "Point":
+                        return symbolizer.fromJson({
+                            circle: {
+                                radius: 20,
+                                fill: {
+                                    color: "blue"
+                                },
+                                stroke: {
+                                    color: "red",
+                                    width: 2
+                                },
+                                opacity: 1
+                            },
+                            text: {
+                                text: index + 1 + "",
+                                fill: {
+                                    color: "white"
+                                },
+                                stroke: {
+                                    color: "red",
+                                    width: 2
+                                },
+                                scale: 3
+                            }
+                        });
+                    case "MultiLineString":
+                        return symbolizer.fromJson({
+                            stroke: {
+                                color: "red",
+                                width: 2
+                            },
+                            text: {
+                                text: index + 1 + "",
+                                fill: {
+                                    color: "white"
+                                },
+                                stroke: {
+                                    color: "red",
+                                    width: 2
+                                },
+                                scale: 3
+                            }
+
+                        });
+                    case "Circle":
+                    case "Polygon":
+                    case "MultiPolygon":
+                        return symbolizer.fromJson({
+                            fill: {
+                                color: "blue"
+                            },
+                            stroke: {
+                                color: "red",
+                                width: 2
+                            },
+                            text: {
+                                text: index + 1 + "",
+                                fill: {
+                                    color: "white"
+                                },
+                                stroke: {
+                                    color: "red",
+                                    width: 2
+                                },
+                                scale: 3
+                            }
+
+                        });
+                    default:
+                        debugger;
+                }
+            }
         });
 
         selection.setActive(false);
+        selection.on("change:active", () => selection.getFeatures().clear());
         map.addInteraction(selection);
 
         map.on("info", (args: {
@@ -73,6 +154,16 @@ export function run() {
                 stopControl(map, Modify);
             }
             selection.setActive(args.control.get("active"));
+        });
+
+        map.on("delete-feature", (args: { control: Draw }) => {
+            if (args.control.get("active")) {
+                stopOtherControls(map, args.control);
+                stopControl(map, Draw);
+                stopControl(map, Modify);
+                stopControl(map, Translate);
+                selection.setActive(false);
+            }
         });
 
         map.on("draw-feature", (args: { control: Draw }) => {
@@ -104,18 +195,21 @@ export function run() {
                 selection.setActive(false);
             }
         });
-        
+
+        map.on("clear-drawings", (args: { control: Button }) => {
+            if (args.control.get("active")) {
+                stopControl(map, Delete);
+                stopControl(map, Draw);
+                stopControl(map, Translate);
+                selection.setActive(false);
+
+                map.getControls()
+                    .getArray()
+                    .filter(i => i instanceof Draw)
+                    .forEach(t => (<Draw>t).options.layers.forEach(l => l.getSource().clear()));
+
+            }
+        });
+
     }
-
-    map.on("clear-drawings", () => {
-        map.getControls()
-            .getArray()
-            .filter(i => i instanceof Draw)
-            .forEach(t => (<Draw>t).options.layers.forEach(l => l.getSource().clear()));
-        stopControl(map, Button);
-        stopInteraction(map, ol.interaction.Draw);
-        stopInteraction(map, ol.interaction.Modify);
-        stopInteraction(map, ol.interaction.Select);
-    });
-
 }

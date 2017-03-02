@@ -759,8 +759,9 @@ define("ol3-draw/examples/index", ["require", "exports"], function (require, exp
     exports.run = run;
     ;
 });
-define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, ol3_button_2, common_3) {
+define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "bower_components/ol3-fun/ol3-fun/common", "bower_components/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer"], function (require, exports, ol, ol3_button_2, common_3, ol3_symbolizer_2) {
     "use strict";
+    var symbolizer = new ol3_symbolizer_2.StyleConverter();
     var Delete = (function (_super) {
         __extends(Delete, _super);
         function Delete() {
@@ -774,23 +775,79 @@ define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3
             var _this = this;
             _super.prototype.setMap.call(this, map);
             var select = new ol.interaction.Select({
-                wrapX: false
+                wrapX: false,
+                style: function (feature, res) {
+                    var index = select.getFeatures().getArray().indexOf(feature);
+                    var fillColor = "rgba(0,0,0,0.2)";
+                    var strokeColor = "red";
+                    var textTemplate = {
+                        text: "X" + (index + 1),
+                        fill: {
+                            color: strokeColor
+                        },
+                        stroke: {
+                            color: fillColor,
+                            width: 2
+                        },
+                        scale: 3
+                    };
+                    switch (feature.getGeometry().getType()) {
+                        case "Point":
+                            return symbolizer.fromJson({
+                                circle: {
+                                    radius: 20,
+                                    fill: {
+                                        color: fillColor
+                                    },
+                                    stroke: {
+                                        color: strokeColor,
+                                        width: 2
+                                    },
+                                    opacity: 1
+                                },
+                                text: textTemplate
+                            });
+                        case "MultiLineString":
+                            return symbolizer.fromJson({
+                                stroke: {
+                                    color: strokeColor,
+                                    width: 2
+                                },
+                                text: textTemplate
+                            });
+                        case "Circle":
+                        case "Polygon":
+                        case "MultiPolygon":
+                            return symbolizer.fromJson({
+                                fill: {
+                                    color: fillColor
+                                },
+                                stroke: {
+                                    color: strokeColor,
+                                    width: 2
+                                },
+                                text: textTemplate
+                            });
+                        default:
+                            debugger;
+                    }
+                }
             });
             select.setActive(false);
             map.addInteraction(select);
-            select.on("select", function (args) {
-                args.selected.forEach(function (f) {
+            var doit = function () {
+                select.getFeatures().forEach(function (f) {
                     var l = select.getLayer(f);
                     l.getSource().removeFeature(f);
                 });
                 select.getFeatures().clear();
-            });
-            select.on("change:active", function () {
-                _this.set("active", select.getActive());
-            });
+            };
             this.on("change:active", function () {
                 var active = _this.get("active");
-                _this.options.element.classList.toggle("active", active);
+                if (!active) {
+                    doit();
+                    select.getFeatures().clear();
+                }
                 select.setActive(active);
             });
         };
@@ -882,7 +939,7 @@ define("ol3-draw/ol3-translate", ["require", "exports", "openlayers", "ol3-draw/
                 _this.options.element.classList.toggle("active", active);
                 select.setActive(active);
                 if (!active)
-                    translate.setActive(false);
+                    select.getFeatures().clear();
             });
         };
         return Translate;
@@ -931,8 +988,9 @@ define("ol3-draw/mapmaker", ["require", "exports", "openlayers", "bower_componen
     MapMaker.DEFAULT_OPTIONS = {};
     exports.MapMaker = MapMaker;
 });
-define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "ol3-draw/ol3-delete", "ol3-draw/ol3-draw", "ol3-draw/ol3-edit", "ol3-draw/ol3-translate", "ol3-draw/mapmaker"], function (require, exports, ol, ol3_button_5, ol3_delete_1, ol3_draw_1, ol3_edit_1, ol3_translate_1, mapmaker_1) {
+define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "bower_components/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer", "ol3-draw/ol3-button", "ol3-draw/ol3-delete", "ol3-draw/ol3-draw", "ol3-draw/ol3-edit", "ol3-draw/ol3-translate", "ol3-draw/mapmaker"], function (require, exports, ol, ol3_symbolizer_3, ol3_button_5, ol3_delete_1, ol3_draw_1, ol3_edit_1, ol3_translate_1, mapmaker_1) {
     "use strict";
+    var symbolizer = new ol3_symbolizer_3.StyleConverter();
     function stopInteraction(map, type) {
         map.getInteractions()
             .getArray()
@@ -964,8 +1022,8 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "ol3-d
         //▲ ▬ ◇ ● ◯ ▧ ★
         ol3_draw_1.Draw.create({ map: map, geometryType: "Polygon", label: "▧", position: "right-10 top" });
         ol3_draw_1.Draw.create({ map: map, geometryType: "MultiLineString", label: "▬", position: "right-8 top" });
-        ol3_draw_1.Draw.create({ map: map, geometryType: "Point", label: "●", position: "right-6 top" });
         ol3_draw_1.Draw.create({ map: map, geometryType: "Circle", label: "◯", position: "right-4 top" });
+        ol3_draw_1.Draw.create({ map: map, geometryType: "Point", label: "●", position: "right-6 top" });
         ol3_translate_1.Translate.create({ map: map, label: "↔", position: "right-2 top" });
         ol3_edit_1.Modify.create({ map: map, label: "Δ", position: "right top" });
         ol3_button_5.Button.create({ map: map, label: "?", position: "right-6 top-2", eventName: "info" });
@@ -974,9 +1032,83 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "ol3-d
         ol3_button_5.Button.create({ map: map, label: "💾", position: "right top-2", eventName: "save" });
         {
             var selection_1 = new ol.interaction.Select({
-                multi: false
+                multi: false,
+                style: function (feature, res) {
+                    var index = selection_1.getFeatures().getArray().indexOf(feature);
+                    switch (feature.getGeometry().getType()) {
+                        case "Point":
+                            return symbolizer.fromJson({
+                                circle: {
+                                    radius: 20,
+                                    fill: {
+                                        color: "blue"
+                                    },
+                                    stroke: {
+                                        color: "red",
+                                        width: 2
+                                    },
+                                    opacity: 1
+                                },
+                                text: {
+                                    text: index + 1 + "",
+                                    fill: {
+                                        color: "white"
+                                    },
+                                    stroke: {
+                                        color: "red",
+                                        width: 2
+                                    },
+                                    scale: 3
+                                }
+                            });
+                        case "MultiLineString":
+                            return symbolizer.fromJson({
+                                stroke: {
+                                    color: "red",
+                                    width: 2
+                                },
+                                text: {
+                                    text: index + 1 + "",
+                                    fill: {
+                                        color: "white"
+                                    },
+                                    stroke: {
+                                        color: "red",
+                                        width: 2
+                                    },
+                                    scale: 3
+                                }
+                            });
+                        case "Circle":
+                        case "Polygon":
+                        case "MultiPolygon":
+                            return symbolizer.fromJson({
+                                fill: {
+                                    color: "blue"
+                                },
+                                stroke: {
+                                    color: "red",
+                                    width: 2
+                                },
+                                text: {
+                                    text: index + 1 + "",
+                                    fill: {
+                                        color: "white"
+                                    },
+                                    stroke: {
+                                        color: "red",
+                                        width: 2
+                                    },
+                                    scale: 3
+                                }
+                            });
+                        default:
+                            debugger;
+                    }
+                }
             });
             selection_1.setActive(false);
+            selection_1.on("change:active", function () { return selection_1.getFeatures().clear(); });
             map.addInteraction(selection_1);
             map.on("info", function (args) {
                 if (args.control.get("active")) {
@@ -986,6 +1118,15 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "ol3-d
                     stopControl(map, ol3_edit_1.Modify);
                 }
                 selection_1.setActive(args.control.get("active"));
+            });
+            map.on("delete-feature", function (args) {
+                if (args.control.get("active")) {
+                    stopOtherControls(map, args.control);
+                    stopControl(map, ol3_draw_1.Draw);
+                    stopControl(map, ol3_edit_1.Modify);
+                    stopControl(map, ol3_translate_1.Translate);
+                    selection_1.setActive(false);
+                }
             });
             map.on("draw-feature", function (args) {
                 if (args.control.get("active")) {
@@ -1014,17 +1155,19 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "ol3-d
                     selection_1.setActive(false);
                 }
             });
+            map.on("clear-drawings", function (args) {
+                if (args.control.get("active")) {
+                    stopControl(map, ol3_delete_1.Delete);
+                    stopControl(map, ol3_draw_1.Draw);
+                    stopControl(map, ol3_translate_1.Translate);
+                    selection_1.setActive(false);
+                    map.getControls()
+                        .getArray()
+                        .filter(function (i) { return i instanceof ol3_draw_1.Draw; })
+                        .forEach(function (t) { return t.options.layers.forEach(function (l) { return l.getSource().clear(); }); });
+                }
+            });
         }
-        map.on("clear-drawings", function () {
-            map.getControls()
-                .getArray()
-                .filter(function (i) { return i instanceof ol3_draw_1.Draw; })
-                .forEach(function (t) { return t.options.layers.forEach(function (l) { return l.getSource().clear(); }); });
-            stopControl(map, ol3_button_5.Button);
-            stopInteraction(map, ol.interaction.Draw);
-            stopInteraction(map, ol.interaction.Modify);
-            stopInteraction(map, ol.interaction.Select);
-        });
     }
     exports.run = run;
 });
