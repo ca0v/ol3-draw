@@ -15,11 +15,13 @@ function pair<A, B>(a1: A[], a2: B[]) {
 }
 
 export interface IOptions extends olx.control.ControlOptions {
+    map?: ol.Map;
     className?: string;
     position?: string;
     label?: string;
     title?: string;
     eventName?: string;
+    buttonType?: typeof Button;
 }
 
 export class Button extends ol.control.Control {
@@ -28,7 +30,8 @@ export class Button extends ol.control.Control {
         position: "top right",
         label: "Button",
         title: "Button",
-        eventName: "click:button"
+        eventName: "click:button",
+        buttonType: Button
     }
 
     static create(options?: IOptions) {
@@ -44,7 +47,11 @@ export class Button extends ol.control.Control {
             document.body.appendChild(options.target);
         }
 
-        return new Button(options);
+        let button = new (options.buttonType)(options);
+        if (options.map) {
+            options.map.addControl(button);
+        }
+        return button;
     }
 
     public options: IOptions;

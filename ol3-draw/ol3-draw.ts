@@ -5,24 +5,8 @@ import { Button, IOptions as IButtonOptions } from "./ol3-button";
 
 const converter = new StyleConverter();
 
-function stopInteraction(map: ol.Map, type: any) {
-    map.getInteractions()
-        .getArray()
-        .filter(i => i instanceof type)
-        .forEach(t => t.setActive(false));
-}
-
-function addInteraction(map: ol.Map, action: ol.interaction.Interaction) {
-    map.addInteraction(action);
-    action.on("change:active", () => {
-        map.dispatchEvent({
-            type: "interaction-active",
-            interaction: action
-        });
-    });
-}
-
 export interface DrawControlOptions extends IButtonOptions {
+    map?: ol.Map;
     layers?: Array<ol.layer.Vector>;
     geometryType?: "Point" | "LineString" | "LinearRing" | "Polygon" | "MultiPoint" | "MultiLineString" | "MultiPolygon" | "GeometryCollection" | "Circle";
 }
@@ -32,31 +16,19 @@ export class Draw extends Button {
         className: "ol-draw",
         geometryType: "Point",
         label: "Draw",
-        title: "Draw"
+        title: "Draw",
+        buttonType: Draw,
+        eventName: "draw-feature"
     }
 
     public options: DrawControlOptions;
 
     static create(options?: DrawControlOptions) {
         options = mixin(mixin({}, Draw.DEFAULT_OPTIONS), options);
-
-        if (!options.element) {
-            options.element = document.createElement("div");
-            document.body.appendChild(options.element);
-            options.element.className = options.className;
-        }
-
-        return new Draw(options);
+        return Button.create(options);
     }
 
-    public interactions: { [name: string]: ol.interaction.Draw };
-
-    isDrawing() {
-        let map = this.getMap();
-        let drawTools = map.getInteractions().getArray()
-            .filter(i => i instanceof ol.interaction.Draw);
-        return 0 < drawTools.length;
-    }
+    private interactions: { [name: string]: ol.interaction.Draw };
 
     private createInteraction() {
         let options = this.options;
@@ -66,12 +38,13 @@ export class Draw extends Button {
             type: options.geometryType,
             source: source
         });
+
         draw.setActive(false);
 
         draw.on("change:active", () =>
             this.options.element.classList.toggle("active", draw.getActive()));
 
-        addInteraction(this.getMap(), draw);
+        options.map.addInteraction(draw);
         return draw;
     }
 
@@ -89,9 +62,6 @@ export class Draw extends Button {
                 if (!interaction) {
                     interaction = this.interactions[options.geometryType] = this.createInteraction();
                 }
-                stopInteraction(map, ol.interaction.Select);
-                stopInteraction(map, ol.interaction.Modify);
-                stopInteraction(map, ol.interaction.Draw);
                 interaction.setActive(true);
             } else {
                 interaction && interaction.setActive(false);

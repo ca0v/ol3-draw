@@ -19,8 +19,17 @@ function stopInteraction(map: ol.Map, type: any) {
 function stopControl(map: ol.Map, type: any) {
     map.getControls()
         .getArray()
+        .filter(i => i.get("active"))
         .filter(i => i instanceof type)
         .forEach(t => t.set("active", false));
+}
+
+function stopOtherControls(map: ol.Map, control: ol.control.Control) {
+    map.getControls()
+        .getArray()
+        .filter(i => i.get("active"))
+        .filter(i => typeof i === typeof control)
+        .forEach(t => t !== control && t.set("active", false));
 }
 
 export function run() {
@@ -34,16 +43,69 @@ export function run() {
     });
 
     //▲ ▬ ◇ ● ◯ ▧ ★
-    map.addControl(Draw.create({ geometryType: "Polygon", label: "▧", position: "right-10 top" }));
-    map.addControl(Draw.create({ geometryType: "MultiLineString", label: "▬", position: "right-8 top" }));
-    map.addControl(Draw.create({ geometryType: "Point", label: "●", position: "right-6 top" }));
-    map.addControl(Draw.create({ geometryType: "Circle", label: "◯", position: "right-4 top" }));    
-    map.addControl(Translate.create({ label: "↔", position: "right-2 top" }));
-    map.addControl(Modify.create({ label: "Δ", position: "right top" }));
+    Draw.create({ map: map, geometryType: "Polygon", label: "▧", position: "right-10 top" });
+    Draw.create({ map: map, geometryType: "MultiLineString", label: "▬", position: "right-8 top" });
+    Draw.create({ map: map, geometryType: "Point", label: "●", position: "right-6 top" });
+    Draw.create({ map: map, geometryType: "Circle", label: "◯", position: "right-4 top" });
+    Translate.create({ map: map, label: "↔", position: "right-2 top" });
+    Modify.create({ map: map, label: "Δ", position: "right top" });
 
-    map.addControl(Delete.create({ label: "␡", position: "right-4 top-2"}));
-    map.addControl(Button.create({ label: "⎚", title: "Clear", position: "right-2 top-2", eventName: "clear-drawings" }));
-    map.addControl(Button.create({ label: "💾", position: "right top-2" }));
+    Button.create({ map: map, label: "?", position: "right-6 top-2", eventName: "info" });
+    Delete.create({ map: map, label: "␡", position: "right-4 top-2" });
+    Button.create({ map: map, label: "⎚", title: "Clear", position: "right-2 top-2", eventName: "clear-drawings" });
+    Button.create({ map: map, label: "💾", position: "right top-2", eventName: "save" });
+
+    {
+        let selection = new ol.interaction.Select({
+            multi: false
+        });
+
+        selection.setActive(false);
+        map.addInteraction(selection);
+
+        map.on("info", (args: {
+            control: Button
+        }) => {
+            if (args.control.get("active")) {
+                stopControl(map, Draw);
+                stopControl(map, Delete);
+                stopControl(map, Translate);
+                stopControl(map, Modify);
+            }
+            selection.setActive(args.control.get("active"));
+        });
+
+        map.on("draw-feature", (args: { control: Draw }) => {
+            if (args.control.get("active")) {
+                stopOtherControls(map, args.control);
+                stopControl(map, Delete);
+                stopControl(map, Modify);
+                stopControl(map, Translate);
+                selection.setActive(false);
+            }
+        });
+
+        map.on("translate-feature", (args: { control: Draw }) => {
+            if (args.control.get("active")) {
+                stopOtherControls(map, args.control);
+                stopControl(map, Delete);
+                stopControl(map, Draw);
+                stopControl(map, Modify);
+                selection.setActive(false);
+            }
+        });
+
+        map.on("modify-feature", (args: { control: Draw }) => {
+            if (args.control.get("active")) {
+                stopOtherControls(map, args.control);
+                stopControl(map, Delete);
+                stopControl(map, Draw);
+                stopControl(map, Translate);
+                selection.setActive(false);
+            }
+        });
+        
+    }
 
     map.on("clear-drawings", () => {
         map.getControls()
