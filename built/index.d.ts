@@ -163,11 +163,13 @@ declare module "bower_components/ol3-symbolizer/index" {
 declare module "ol3-draw/ol3-button" {
     import ol = require("openlayers");
     export interface IOptions extends olx.control.ControlOptions {
+        map?: ol.Map;
         className?: string;
         position?: string;
         label?: string;
         title?: string;
         eventName?: string;
+        buttonType?: typeof Button;
     }
     export class Button extends ol.control.Control {
         static DEFAULT_OPTIONS: IOptions;
@@ -182,17 +184,15 @@ declare module "ol3-draw/ol3-draw" {
     import ol = require("openlayers");
     import { Button, IOptions as IButtonOptions } from "ol3-draw/ol3-button";
     export interface DrawControlOptions extends IButtonOptions {
+        map?: ol.Map;
         layers?: Array<ol.layer.Vector>;
         geometryType?: "Point" | "LineString" | "LinearRing" | "Polygon" | "MultiPoint" | "MultiLineString" | "MultiPolygon" | "GeometryCollection" | "Circle";
     }
     export class Draw extends Button {
         static DEFAULT_OPTIONS: DrawControlOptions;
         options: DrawControlOptions;
-        static create(options?: DrawControlOptions): Draw;
-        interactions: {
-            [name: string]: ol.interaction.Draw;
-        };
-        isDrawing(): boolean;
+        static create(options?: DrawControlOptions): Button;
+        private interactions;
         private createInteraction();
         setMap(map: ol.Map): void;
     }
@@ -217,7 +217,7 @@ declare module "ol3-draw/ol3-delete" {
     export class Delete extends Button {
         static DEFAULT_OPTIONS: DeleteControlOptions;
         options: DeleteControlOptions;
-        static create(options?: DeleteControlOptions): Delete;
+        static create(options?: DeleteControlOptions): Button;
         setMap(map: ol.Map): void;
     }
 }
@@ -228,7 +228,7 @@ declare module "ol3-draw/ol3-edit" {
     }
     export class Modify extends Button {
         static DEFAULT_OPTIONS: EditControlOptions;
-        static create(options?: EditControlOptions): Modify;
+        static create(options?: EditControlOptions): Button;
         options: EditControlOptions;
         setMap(map: ol.Map): void;
     }
@@ -240,7 +240,7 @@ declare module "ol3-draw/ol3-translate" {
     }
     export class Translate extends Button {
         static DEFAULT_OPTIONS: IOptions;
-        static create(options?: IOptions): Translate;
+        static create(options?: IOptions): Button;
         setMap(map: ol.Map): void;
     }
 }

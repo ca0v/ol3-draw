@@ -23,42 +23,31 @@ export class Translate extends Button {
 
     setMap(map: ol.Map) {
         super.setMap(map);
-        let translate: ol.interaction.Translate;
-        let select: ol.interaction.Select;
+
+        let select = new ol.interaction.Select({
+            wrapX: false
+        });
+
+        let translate = new ol.interaction.Translate({
+            features: select.getFeatures()
+        });
+
+        select.on("select", (args: ol.interaction.SelectEvent) => {
+            translate.setActive(true);
+        });
+
+        select.setActive(false);
+        translate.setActive(false);
+
+        map.addInteraction(select);
+        map.addInteraction(translate);
 
         this.on("change:active", () => {
             let active = this.get("active");
             this.options.element.classList.toggle("active", active);
 
-            if (select) {
-                map.removeInteraction(select);
-                select = null;
-            }
-            if (translate) {
-                map.removeInteraction(translate);
-                translate = null;
-            }
-
-            if (active) {
-                select = new ol.interaction.Select({ wrapX: false });
-                map.addInteraction(select);
-                select.setActive(true);
-
-                select.on("select", (args: ol.interaction.SelectEvent) => {
-                    translate = new ol.interaction.Translate({
-                        features: select.getFeatures()
-                    });
-
-                    map.addInteraction(translate);
-                    translate.setActive(true);
-                });
-
-                select.on("change:active", () => {
-                    this.set("active", false);
-                });
-
-            } else {
-            }
+            select.setActive(active);
+            if (!active) translate.setActive(false);
         });
 
     }

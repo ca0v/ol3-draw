@@ -23,44 +23,29 @@ export class Modify extends Button {
 
     setMap(map: ol.Map) {
         super.setMap(map);
-        let select: ol.interaction.Select;
-        let modify: ol.interaction.Modify;
+
+        let select = new ol.interaction.Select({
+            wrapX: false
+        });
+
+        let modify = new ol.interaction.Modify({
+            features: select.getFeatures()
+        });
+
+        select.on("select", (args: ol.interaction.SelectEvent) => {
+            modify.setActive(true);
+        });
+
+        select.setActive(false);
+        modify.setActive(false);
+
+        map.addInteraction(select);
+        map.addInteraction(modify);
 
         this.on("change:active", () => {
             let active = this.get("active");
-            this.options.element.classList.toggle("active", active);
-
-            if (select) {
-                select.setActive(false);
-                map.removeInteraction(select);
-                select = null;
-            }
-            if (modify) {
-                modify.setActive(false);
-                map.removeInteraction(modify);
-                modify = null;
-            }
-
-            if (active) {
-                select = new ol.interaction.Select({
-                    wrapX: false
-                });
-                map.addInteraction(select);
-                select.setActive(true);
-
-                select.on("select", (args: ol.interaction.SelectEvent) => {
-                    modify = new ol.interaction.Modify({
-                        features: select.getFeatures()
-                    });
-                    map.addInteraction(modify);
-                    modify.setActive(true);
-                });
-
-                select.on("change:active", () => {
-                    this.set("active", false);
-                });
-
-            }
+            select.setActive(active);
+            if (!active) select.getFeatures().clear();
         });
     }
 }
