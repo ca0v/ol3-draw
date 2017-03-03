@@ -59,6 +59,25 @@ export class Select extends Button {
                     scale: 3
                 }
             }],
+            "Circle": [{
+                fill: {
+                    color: "blue"
+                },
+                stroke: {
+                    color: "red",
+                    width: 2
+                },
+                text: {
+                    fill: {
+                        color: "white"
+                    },
+                    stroke: {
+                        color: "red",
+                        width: 2
+                    },
+                    scale: 3
+                }
+            }],
             "Polygon": [{
                 fill: {
                     color: "blue"
