@@ -23,22 +23,30 @@ export class MapMaker {
             position: absolute;
         }
         `);
+
+        let osm = new ol.layer.Tile({
+            opacity: 0.8,
+            source: new ol.source.OSM()
+        });
+
+        let view = new ol.View({
+            projection: options.projection,
+            center: options.center,
+            zoom: options.zoom
+        });
+
         let map = new ol.Map({
             target: options.target,
             keyboardEventTarget: document,
             loadTilesWhileAnimating: true,
             loadTilesWhileInteracting: true,
-            controls: ol.control.defaults({ attribution: false }),
-            view: new ol.View({
-                projection: options.projection,
-                center: options.center,
-                zoom: options.zoom
-            }),
-            layers: [
-                new ol.layer.Tile({
-                    opacity: 0.8,
-                    source: new ol.source.OSM()
-                })]
+            controls: ol.control.defaults({ attribution: false }).extend([new ol.control.ScaleLine(), new ol.control.OverviewMap({
+                layers: [osm], view: new ol.View({
+                    projection: options.projection
+                })
+            })]),
+            view: view,
+            layers: [osm]
         });
         return map;
     }

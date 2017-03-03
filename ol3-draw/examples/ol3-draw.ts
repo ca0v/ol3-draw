@@ -7,7 +7,7 @@ import { Draw } from "../ol3-draw";
 import { Modify } from "../ol3-edit";
 import { Translate } from "../ol3-translate";
 import { Select } from "../ol3-select";
-import { MapMaker } from "../mapmaker";
+import { MapMaker } from "./mapmaker";
 
 function stopInteraction(map: ol.Map, type: any) {
     map.getInteractions()
@@ -47,7 +47,6 @@ export function run() {
         Select.create({ map: map, label: "?", eventName: "info" }),
 
         Draw.create({ map: map, geometryType: "Polygon", label: "▧", title: "Polygon" }),
-        Draw.create({ map: map, geometryType: "MultiLineString", label: "▬", title: "Line" }),
         Draw.create({
             map: map, geometryType: "Circle", label: "◯", title: "Circle", style: [
                 {
@@ -61,6 +60,7 @@ export function run() {
                 }
             ]
         }),
+        Draw.create({ map: map, geometryType: "MultiLineString", label: "▬", title: "Line" }),
         Draw.create({ map: map, geometryType: "Point", label: "●", title: "Point" }),
 
         Translate.create({ map: map, label: "↔" }),
@@ -76,7 +76,10 @@ export function run() {
 
     {
 
-        let h = cssin("ol3-draw", `.ol-zoom { top: 0.5em; right: 0.5em; left: auto;}`);
+        let h = cssin("ol3-draw", `
+        .ol-zoom { top: 0.5em; right: 0.5em; left: auto;}
+        .ol-overviewmap { right: .5em; top: 4.5em; left: auto; bottom: auto;}
+        `);
         map.on("exit", () => {
             toolbar.forEach(t => t.destroy());
             h();
