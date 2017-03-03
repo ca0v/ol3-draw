@@ -1,11 +1,8 @@
 import ol = require("openlayers");
+import { Button, ButtonOptions as ButtonOptions } from "./ol3-button";
 import { html, mixin } from "ol3-fun/ol3-fun/common";
-import { StyleConverter } from "ol3-symbolizer";
-import { Button, IOptions as IButtonOptions } from "./ol3-button";
 
-const converter = new StyleConverter();
-
-export interface DrawControlOptions extends IButtonOptions {
+export interface DrawControlOptions extends ButtonOptions {
     map?: ol.Map;
     layers?: Array<ol.layer.Vector>;
     geometryType?: "Point" | "LineString" | "LinearRing" | "Polygon" | "MultiPoint" | "MultiLineString" | "MultiPolygon" | "GeometryCollection" | "Circle";
@@ -48,11 +45,15 @@ export class Draw extends Button {
         return draw;
     }
 
-    setMap(map: ol.Map) {
-        let options = this.options;
-        this.interactions = {};
+    constructor(options: DrawControlOptions) {
+        super(options);
 
-        super.setMap(map);
+        this.interactions = {};
+        this.handlers.push(() => Object.keys(this.interactions).forEach(k => {
+            let interaction = this.interactions[k];
+            interaction.setActive(false);
+            options.map.removeInteraction(interaction);
+        }))
 
         this.on("change:active", () => {
             let active = this.get("active");
@@ -97,14 +98,14 @@ export class Draw extends Button {
                     width: 1
                 }
             }
-        ].map(s => converter.fromJson(s));
+        ].map(s => this.symbolizer.fromJson(s));
 
         if (!options.layers) {
             let layer = new ol.layer.Vector({
                 style: style,
                 source: new ol.source.Vector()
             });
-            map.addLayer(layer);
+            options.map.addLayer(layer);
             options.layers = [layer];
         }
     }

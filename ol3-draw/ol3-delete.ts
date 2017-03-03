@@ -1,9 +1,6 @@
 import ol = require("openlayers");
-import { Button, IOptions as IButtonOptions } from "./ol3-button";
+import { Button, ButtonOptions as IButtonOptions } from "./ol3-button";
 import { mixin } from "ol3-fun/ol3-fun/common";
-import { StyleConverter } from "ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer";
-
-let symbolizer = new StyleConverter();
 
 export interface DeleteControlOptions extends IButtonOptions {
 }
@@ -25,9 +22,11 @@ export class Delete extends Button {
         return Button.create(options);
     }
 
-    setMap(map: ol.Map) {
-        super.setMap(map);
 
+    constructor(options: DeleteControlOptions) {
+        super(options);
+        
+        let map = options.map;
         let select = new ol.interaction.Select({
             wrapX: false,
             style: (feature: ol.Feature, res: number) => {
@@ -51,7 +50,7 @@ export class Delete extends Button {
 
                 switch (feature.getGeometry().getType()) {
                     case "Point":
-                        return symbolizer.fromJson({
+                        return this.symbolizer.fromJson({
                             circle: {
                                 radius: 20,
                                 fill: {
@@ -66,7 +65,7 @@ export class Delete extends Button {
                             text: textTemplate
                         });
                     case "MultiLineString":
-                        return symbolizer.fromJson({
+                        return this.symbolizer.fromJson({
                             stroke: {
                                 color: strokeColor,
                                 width: 2
@@ -77,7 +76,7 @@ export class Delete extends Button {
                     case "Circle":
                     case "Polygon":
                     case "MultiPolygon":
-                        return symbolizer.fromJson({
+                        return this.symbolizer.fromJson({
                             fill: {
                                 color: fillColor
                             },
@@ -95,6 +94,11 @@ export class Delete extends Button {
 
         select.setActive(false);
         map.addInteraction(select);
+
+        this.handlers.push(() => {
+            select.setActive(false);
+            map.removeInteraction(select);
+        });
 
         let doit = () => {
             select.getFeatures().forEach(f => {
@@ -114,5 +118,4 @@ export class Delete extends Button {
         });
 
     }
-
 }

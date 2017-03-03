@@ -1,13 +1,13 @@
 import ol = require("openlayers");
-import { Button, IOptions as IButtonOptions } from "./ol3-button";
+import { Button, ButtonOptions as IButtonOptions } from "./ol3-button";
 import { html, defaults } from "ol3-fun/ol3-fun/common";
 
-export interface IOptions extends IButtonOptions {
+export interface TranslateControlOptions extends IButtonOptions {
 
 }
 
 export class Translate extends Button {
-    static DEFAULT_OPTIONS: IOptions = {
+    static DEFAULT_OPTIONS: TranslateControlOptions = {
         className: "ol-translate",
         position: "top right",
         label: "XY",
@@ -16,13 +16,15 @@ export class Translate extends Button {
         buttonType: Translate
     }
 
-    static create(options?: IOptions) {
+    static create(options?: TranslateControlOptions) {
         options = defaults({}, options, Translate.DEFAULT_OPTIONS);
         return Button.create(options);
     }
 
-    setMap(map: ol.Map) {
-        super.setMap(map);
+    constructor (options: TranslateControlOptions) {
+        super(options);
+
+        let map = options.map;
 
         let select = new ol.interaction.Select({
             wrapX: false
@@ -36,11 +38,17 @@ export class Translate extends Button {
             translate.setActive(true);
         });
 
-        select.setActive(false);
-        translate.setActive(false);
+        [select, translate].forEach(i => {
+            i.setActive(false);
+            options.map.addInteraction(i);
+        });
 
-        map.addInteraction(select);
-        map.addInteraction(translate);
+        this.handlers.push(() => {
+            [select, translate].forEach(i => {
+                i.setActive(false);
+                options.map.removeInteraction(i);
+            });
+        });
 
         this.on("change:active", () => {
             let active = this.get("active");

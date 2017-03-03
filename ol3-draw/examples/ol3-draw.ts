@@ -1,15 +1,13 @@
 import ol = require("openlayers");
 
-import { StyleConverter } from "ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer";
 import { cssin, mixin } from "ol3-fun/ol3-fun/common";
 import { Button } from "../ol3-button";
 import { Delete } from "../ol3-delete";
 import { Draw } from "../ol3-draw";
 import { Modify } from "../ol3-edit";
 import { Translate } from "../ol3-translate";
+import { Select } from "../ol3-select";
 import { MapMaker } from "../mapmaker";
-
-let symbolizer = new StyleConverter();
 
 function stopInteraction(map: ol.Map, type: any) {
     map.getInteractions()
@@ -45,115 +43,43 @@ export function run() {
     });
 
     //▲ ▬ ◇ ● ◯ ▧ ★
-    Draw.create({ map: map, geometryType: "Polygon", label: "▧", position: "right-10 top" });
-    Draw.create({ map: map, geometryType: "MultiLineString", label: "▬", position: "right-8 top" });
-    Draw.create({ map: map, geometryType: "Circle", label: "◯", position: "right-4 top" });
-    Draw.create({ map: map, geometryType: "Point", label: "●", position: "right-6 top" });
-    Translate.create({ map: map, label: "↔", position: "right-2 top" });
-    Modify.create({ map: map, label: "Δ", position: "right top" });
+    let toolbar = [
+        Select.create({ map: map, label: "?", eventName: "info" }),
 
-    Button.create({ map: map, label: "?", position: "right-6 top-2", eventName: "info" });
-    Delete.create({ map: map, label: "␡", position: "right-4 top-2" });
-    Button.create({ map: map, label: "⎚", title: "Clear", position: "right-2 top-2", eventName: "clear-drawings" });
-    Button.create({ map: map, label: "💾", position: "right top-2", eventName: "save" });
+        Draw.create({ map: map, geometryType: "Polygon", label: "▧" }),
+        Draw.create({ map: map, geometryType: "MultiLineString", label: "▬" }),
+        Draw.create({ map: map, geometryType: "Circle", label: "◯" }),
+        Draw.create({ map: map, geometryType: "Point", label: "●" }),
+
+        Translate.create({ map: map, label: "↔" }),
+        Modify.create({ map: map, label: "Δ" }),
+
+        Delete.create({ map: map, label: "␡" }),
+        Button.create({ map: map, label: "⎚", title: "Clear", eventName: "clear-drawings" }),
+
+        Button.create({ map: map, label: "💾", eventName: "save" }),
+        Button.create({ map: map, label: "X", eventName: "exit" }),
+    ];
+    toolbar.forEach((t, i) => t.setPosition(`left top${-i * 2 || ''}`));
 
     {
 
-        let selection = new ol.interaction.Select({
-            multi: false,
-            style: (feature: ol.Feature, res: number) => {
-
-                let index = selection.getFeatures().getArray().indexOf(feature);
-
-                switch (feature.getGeometry().getType()) {
-                    case "Point":
-                        return symbolizer.fromJson({
-                            circle: {
-                                radius: 20,
-                                fill: {
-                                    color: "blue"
-                                },
-                                stroke: {
-                                    color: "red",
-                                    width: 2
-                                },
-                                opacity: 1
-                            },
-                            text: {
-                                text: index + 1 + "",
-                                fill: {
-                                    color: "white"
-                                },
-                                stroke: {
-                                    color: "red",
-                                    width: 2
-                                },
-                                scale: 3
-                            }
-                        });
-                    case "MultiLineString":
-                        return symbolizer.fromJson({
-                            stroke: {
-                                color: "red",
-                                width: 2
-                            },
-                            text: {
-                                text: index + 1 + "",
-                                fill: {
-                                    color: "white"
-                                },
-                                stroke: {
-                                    color: "red",
-                                    width: 2
-                                },
-                                scale: 3
-                            }
-
-                        });
-                    case "Circle":
-                    case "Polygon":
-                    case "MultiPolygon":
-                        return symbolizer.fromJson({
-                            fill: {
-                                color: "blue"
-                            },
-                            stroke: {
-                                color: "red",
-                                width: 2
-                            },
-                            text: {
-                                text: index + 1 + "",
-                                fill: {
-                                    color: "white"
-                                },
-                                stroke: {
-                                    color: "red",
-                                    width: 2
-                                },
-                                scale: 3
-                            }
-
-                        });
-                    default:
-                        debugger;
-                }
-            }
+        let h = cssin("ol3-draw", `.ol-zoom { top: 0.5em; right: 0.5em; left: auto;}`);
+        map.on("exit", () => {
+            toolbar.forEach(t => t.destroy());
+            h();
         });
-
-        selection.setActive(false);
-        selection.on("change:active", () => selection.getFeatures().clear());
-        map.addInteraction(selection);
 
         map.on("info", (args: {
             control: Button
         }) => {
             if (args.control.get("active")) {
+                stopOtherControls(map, args.control);
                 stopControl(map, Draw);
                 stopControl(map, Delete);
                 stopControl(map, Translate);
                 stopControl(map, Modify);
             }
-            selection.setActive(args.control.get("active"));
         });
 
         map.on("delete-feature", (args: { control: Draw }) => {
@@ -162,7 +88,7 @@ export function run() {
                 stopControl(map, Draw);
                 stopControl(map, Modify);
                 stopControl(map, Translate);
-                selection.setActive(false);
+                stopControl(map, Select);
             }
         });
 
@@ -172,7 +98,7 @@ export function run() {
                 stopControl(map, Delete);
                 stopControl(map, Modify);
                 stopControl(map, Translate);
-                selection.setActive(false);
+                stopControl(map, Select);
             }
         });
 
@@ -182,7 +108,7 @@ export function run() {
                 stopControl(map, Delete);
                 stopControl(map, Draw);
                 stopControl(map, Modify);
-                selection.setActive(false);
+                stopControl(map, Select);
             }
         });
 
@@ -192,7 +118,7 @@ export function run() {
                 stopControl(map, Delete);
                 stopControl(map, Draw);
                 stopControl(map, Translate);
-                selection.setActive(false);
+                stopControl(map, Select);
             }
         });
 
@@ -201,7 +127,7 @@ export function run() {
                 stopControl(map, Delete);
                 stopControl(map, Draw);
                 stopControl(map, Translate);
-                selection.setActive(false);
+                stopControl(map, Select);
 
                 map.getControls()
                     .getArray()

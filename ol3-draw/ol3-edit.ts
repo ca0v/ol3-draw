@@ -1,6 +1,6 @@
 import ol = require("openlayers");
 import { html, mixin } from "ol3-fun/ol3-fun/common";
-import { Button, IOptions as IButtonOptions } from "./ol3-button";
+import { Button, ButtonOptions as IButtonOptions } from "./ol3-button";
 
 export interface EditControlOptions extends IButtonOptions {
 }
@@ -21,8 +21,8 @@ export class Modify extends Button {
 
     public options: EditControlOptions;
 
-    setMap(map: ol.Map) {
-        super.setMap(map);
+    constructor(options: EditControlOptions) {
+        super(options);
 
         let select = new ol.interaction.Select({
             wrapX: false
@@ -36,11 +36,17 @@ export class Modify extends Button {
             modify.setActive(true);
         });
 
-        select.setActive(false);
-        modify.setActive(false);
+        [select, modify].forEach(i => {
+            i.setActive(false);
+            options.map.addInteraction(i);
+        });
 
-        map.addInteraction(select);
-        map.addInteraction(modify);
+        this.handlers.push(() => {
+            [select, modify].forEach(i => {
+                i.setActive(false);
+                options.map.removeInteraction(i);
+            });
+        });
 
         this.on("change:active", () => {
             let active = this.get("active");

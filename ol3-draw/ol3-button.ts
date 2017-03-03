@@ -14,7 +14,7 @@ function pair<A, B>(a1: A[], a2: B[]) {
     return result;
 }
 
-export interface IOptions extends olx.control.ControlOptions {
+export interface ButtonOptions extends olx.control.ControlOptions {
     map?: ol.Map;
     className?: string;
     position?: string;
@@ -25,7 +25,8 @@ export interface IOptions extends olx.control.ControlOptions {
 }
 
 export class Button extends ol.control.Control {
-    static DEFAULT_OPTIONS: IOptions = {
+
+    static DEFAULT_OPTIONS: ButtonOptions = {
         className: "ol-button",
         position: "top right",
         label: "Button",
@@ -34,18 +35,10 @@ export class Button extends ol.control.Control {
         buttonType: Button
     }
 
-    static create(options?: IOptions) {
+    static create(options?: ButtonOptions) {
         options = mixin(mixin({}, Button.DEFAULT_OPTIONS), options);
 
-        if (!options.element) {
-            options.element = document.createElement("div");
-            document.body.appendChild(options.element);
-        }
-
-        if (!options.target) {
-            options.target = document.createElement("div");
-            document.body.appendChild(options.target);
-        }
+        options.element = options.element || document.createElement("DIV");
 
         let button = new (options.buttonType)(options);
         if (options.map) {
@@ -54,26 +47,55 @@ export class Button extends ol.control.Control {
         return button;
     }
 
-    public options: IOptions;
+    public options: ButtonOptions;
+    public handlers: Array<() => void>;
+    public symbolizer: StyleConverter;
 
-    constructor(options: IOptions) {
+    constructor(options: ButtonOptions) {
         super(options);
         this.options = options;
+        this.handlers = [];
+        this.symbolizer = new StyleConverter();
 
         this.cssin();
         options.element.className = `${options.className} ${options.position}`;
 
         let button = html(`<input type="button" value="${options.label}" />`);
+        this.handlers.push(() => options.element.remove());
+
         button.title = options.title;
         options.element.appendChild(button);
 
         this.set("active", false);
+
         button.addEventListener("click", () => {
             this.dispatchEvent("click");
             this.set("active", !this.get("active"));
         });
 
-        this.on("change:active", () => void this.options.element.classList.toggle("active", this.get("active")));
+        this.on("change:active", () => {
+            this.options.element.classList.toggle("active", this.get("active"));
+            options.map.dispatchEvent({
+                type: options.eventName,
+                control: this
+            });
+        });
+
+    }
+
+    setPosition(position: string) {
+        this.options.position.split(' ')
+            .forEach(k => this.options.element.classList.remove(k));
+
+        position.split(' ')
+            .forEach(k => this.options.element.classList.add(k));
+
+        this.options.position = position;
+    }
+
+    destroy() {
+        this.handlers.forEach(h => h());
+        this.setTarget(null);
     }
 
     cssin() {
@@ -81,7 +103,7 @@ export class Button extends ol.control.Control {
         let positions = pair("top left right bottom".split(" "), range(24))
             .map(pos => `.${className}.${pos[0] + (-pos[1] || '')} { ${pos[0]}:${0.5 + pos[1]}em; }`);
 
-        cssin(className, `
+        this.handlers.push(cssin(className, `
             .${className} {
                 position: absolute;
                 background: #ccc;
@@ -96,19 +118,18 @@ export class Button extends ol.control.Control {
                 height: 2em;
             }
             ${positions.join('\n')}
-        `);
+        `));
     }
 
     setMap(map: ol.Map) {
         let options = this.options;
         super.setMap(map);
 
-        this.on("change:active", () => {
-            map.dispatchEvent({
-                type: options.eventName,
-                control: this
-            });
-        });
+        if (!map) {
+            this.destroy();
+            return;
+        }
+
     }
 
 }
