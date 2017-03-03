@@ -627,7 +627,7 @@ define("ol3-draw/ol3-button", ["require", "exports", "openlayers", "bower_compon
             var className = this.options.className;
             var positions = pair("top left right bottom".split(" "), range(24))
                 .map(function (pos) { return "." + className + "." + (pos[0] + (-pos[1] || '')) + " { " + pos[0] + ":" + (0.5 + pos[1]) + "em; }"; });
-            this.handlers.push(common_1.cssin(className, "\n            ." + className + " {\n                position: absolute;\n                background: #ccc;\n            }\n            ." + className + ".active {\n                background-color: white;\n            }\n            ." + className + " input[type=\"button\"] {\n                background: transparent;\n                border: none;\n                width: 2em;\n                height: 2em;\n            }\n            " + positions.join('\n') + "\n        "));
+            this.handlers.push(common_1.cssin(className, "\n            ." + className + " {\n                position: absolute;\n                background-color: rgba(255,255,255,.4);\n            }\n            ." + className + ".active {\n                background-color: white;\n            }\n            ." + className + ":hover {\n                background-color: white;\n            }\n            ." + className + " input[type=\"button\"] {\n                color: rgba(0,60,136,1);\n                background: transparent;\n                border: none;\n                width: 2em;\n                height: 2em;\n            }\n            " + positions.join('\n') + "\n        "));
         };
         Button.prototype.setMap = function (map) {
             var options = this.options;
@@ -771,7 +771,45 @@ define("ol3-draw/examples/index", ["require", "exports"], function (require, exp
     exports.run = run;
     ;
 });
-define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, ol3_button_2, common_3) {
+define("ol3-draw/examples/mapmaker", ["require", "exports", "openlayers", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, common_3) {
+    "use strict";
+    var MapMaker = (function () {
+        function MapMaker() {
+        }
+        MapMaker.create = function (options) {
+            options = common_3.mixin(common_3.mixin({}, MapMaker.DEFAULT_OPTIONS), options);
+            options.target.classList.add("ol-map");
+            common_3.cssin("mapmaker", "\n        .ol-map {\n            top: 0;\n            left: 0;\n            right: 0;\n            bottom:0;\n            position: absolute;\n        }\n        ");
+            var osm = new ol.layer.Tile({
+                opacity: 0.8,
+                source: new ol.source.OSM()
+            });
+            var view = new ol.View({
+                projection: options.projection,
+                center: options.center,
+                zoom: options.zoom
+            });
+            var map = new ol.Map({
+                target: options.target,
+                keyboardEventTarget: document,
+                loadTilesWhileAnimating: true,
+                loadTilesWhileInteracting: true,
+                controls: ol.control.defaults({ attribution: false }).extend([new ol.control.ScaleLine(), new ol.control.OverviewMap({
+                        layers: [osm], view: new ol.View({
+                            projection: options.projection
+                        })
+                    })]),
+                view: view,
+                layers: [osm]
+            });
+            return map;
+        };
+        return MapMaker;
+    }());
+    MapMaker.DEFAULT_OPTIONS = {};
+    exports.MapMaker = MapMaker;
+});
+define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, ol3_button_2, common_4) {
     "use strict";
     var Delete = (function (_super) {
         __extends(Delete, _super);
@@ -861,7 +899,7 @@ define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3
             return _this;
         }
         Delete.create = function (options) {
-            options = common_3.mixin(common_3.mixin({}, Delete.DEFAULT_OPTIONS), options);
+            options = common_4.mixin(common_4.mixin({}, Delete.DEFAULT_OPTIONS), options);
             return ol3_button_2.Button.create(options);
         };
         return Delete;
@@ -875,7 +913,7 @@ define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3
     };
     exports.Delete = Delete;
 });
-define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "bower_components/ol3-fun/ol3-fun/common", "ol3-draw/ol3-button"], function (require, exports, ol, common_4, ol3_button_3) {
+define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "bower_components/ol3-fun/ol3-fun/common", "ol3-draw/ol3-button"], function (require, exports, ol, common_5, ol3_button_3) {
     "use strict";
     var Modify = (function (_super) {
         __extends(Modify, _super);
@@ -909,7 +947,7 @@ define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "bower_componen
             return _this;
         }
         Modify.create = function (options) {
-            options = common_4.mixin(common_4.mixin({}, Modify.DEFAULT_OPTIONS), options);
+            options = common_5.mixin(common_5.mixin({}, Modify.DEFAULT_OPTIONS), options);
             return ol3_button_3.Button.create(options);
         };
         return Modify;
@@ -923,7 +961,7 @@ define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "bower_componen
     };
     exports.Modify = Modify;
 });
-define("ol3-draw/ol3-translate", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, ol3_button_4, common_5) {
+define("ol3-draw/ol3-translate", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, ol3_button_4, common_6) {
     "use strict";
     var Translate = (function (_super) {
         __extends(Translate, _super);
@@ -959,7 +997,7 @@ define("ol3-draw/ol3-translate", ["require", "exports", "openlayers", "ol3-draw/
             return _this;
         }
         Translate.create = function (options) {
-            options = common_5.defaults({}, options, Translate.DEFAULT_OPTIONS);
+            options = common_6.defaults({}, options, Translate.DEFAULT_OPTIONS);
             return ol3_button_4.Button.create(options);
         };
         return Translate;
@@ -974,7 +1012,7 @@ define("ol3-draw/ol3-translate", ["require", "exports", "openlayers", "ol3-draw/
     };
     exports.Translate = Translate;
 });
-define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, ol3_button_5, common_6) {
+define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, ol3_button_5, common_7) {
     "use strict";
     var Select = (function (_super) {
         __extends(Select, _super);
@@ -982,93 +1020,53 @@ define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3
             var _this = _super.call(this, options) || this;
             var map = options.map;
             var selection = new ol.interaction.Select({
-                multi: false,
+                condition: ol.events.condition.click,
+                multi: options.multi,
                 style: function (feature, res) {
-                    var index = selection.getFeatures().getArray().indexOf(feature);
-                    switch (feature.getGeometry().getType()) {
-                        case "Point":
-                            return _this.symbolizer.fromJson({
-                                circle: {
-                                    radius: 20,
-                                    fill: {
-                                        color: "blue"
-                                    },
-                                    stroke: {
-                                        color: "red",
-                                        width: 2
-                                    },
-                                    opacity: 1
-                                },
-                                text: {
-                                    text: index + 1 + "",
-                                    fill: {
-                                        color: "white"
-                                    },
-                                    stroke: {
-                                        color: "red",
-                                        width: 2
-                                    },
-                                    scale: 3
-                                }
-                            });
-                        case "MultiLineString":
-                            return _this.symbolizer.fromJson({
-                                stroke: {
-                                    color: "red",
-                                    width: 2
-                                },
-                                text: {
-                                    text: index + 1 + "",
-                                    fill: {
-                                        color: "white"
-                                    },
-                                    stroke: {
-                                        color: "red",
-                                        width: 2
-                                    },
-                                    scale: 3
-                                }
-                            });
-                        case "Circle":
-                        case "Polygon":
-                        case "MultiPolygon":
-                            return _this.symbolizer.fromJson({
-                                fill: {
-                                    color: "blue"
-                                },
-                                stroke: {
-                                    color: "red",
-                                    width: 2
-                                },
-                                text: {
-                                    text: index + 1 + "",
-                                    fill: {
-                                        color: "white"
-                                    },
-                                    stroke: {
-                                        color: "red",
-                                        width: 2
-                                    },
-                                    scale: 3
-                                }
-                            });
-                        default:
-                            debugger;
-                    }
+                    var style = options.style[feature.getGeometry().getType()].map(function (s) { return _this.symbolizer.fromJson(s); });
+                    style.filter(function (s) { return s.getText(); }).forEach(function (s) {
+                        style[0].getText().setText(selection.getFeatures().getArray().indexOf(feature) + 1 + "");
+                    });
+                    return style;
                 }
             });
+            var boxSelect = new ol.interaction.DragBox({
+                condition: options.boxSelectCondition
+            });
+            boxSelect.setActive(false);
+            map.addInteraction(boxSelect);
+            {
+                var boxStartCoordinate;
+                boxSelect.on("boxend", function (args) {
+                    var extent = boxSelect.getGeometry().getExtent();
+                    var features = selection.getFeatures().getArray();
+                    map.getLayers()
+                        .getArray()
+                        .filter(function (l) { return l instanceof ol.layer.Vector; })
+                        .map(function (l) { return l; })
+                        .forEach(function (l) { return l.getSource().forEachFeatureIntersectingExtent(extent, function (feature) {
+                        if (-1 === features.indexOf(feature)) {
+                            selection.getFeatures().push(feature);
+                        }
+                        else {
+                            selection.getFeatures().remove(feature);
+                        }
+                    }); });
+                });
+            }
             selection.setActive(false);
             map.addInteraction(selection);
             _this.on("change:active", function () {
                 var active = _this.get("active");
                 selection.setActive(active);
+                boxSelect.setActive(active);
                 if (!active)
                     selection.getFeatures().clear();
             });
             return _this;
         }
         Select.create = function (options) {
-            options = common_6.defaults({}, options, Select.DEFAULT_OPTIONS);
+            options = common_7.defaults({}, options, Select.DEFAULT_OPTIONS);
             return ol3_button_5.Button.create(options);
         };
         return Select;
@@ -1079,45 +1077,73 @@ define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3
         label: "§",
         title: "Select",
         eventName: "select-feature",
-        buttonType: Select
+        multi: false,
+        buttonType: Select,
+        boxSelectCondition: ol.events.condition.shiftKeyOnly,
+        style: {
+            "Point": [{
+                    circle: {
+                        radius: 20,
+                        fill: {
+                            color: "blue"
+                        },
+                        stroke: {
+                            color: "red",
+                            width: 2
+                        },
+                        opacity: 1
+                    },
+                    text: {
+                        fill: {
+                            color: "white"
+                        },
+                        stroke: {
+                            color: "red",
+                            width: 2
+                        },
+                        scale: 3
+                    }
+                }],
+            "MultiLineString": [{
+                    stroke: {
+                        color: "red",
+                        width: 2
+                    },
+                    text: {
+                        fill: {
+                            color: "white"
+                        },
+                        stroke: {
+                            color: "red",
+                            width: 2
+                        },
+                        scale: 3
+                    }
+                }],
+            "Polygon": [{
+                    fill: {
+                        color: "blue"
+                    },
+                    stroke: {
+                        color: "red",
+                        width: 2
+                    },
+                    text: {
+                        fill: {
+                            color: "white"
+                        },
+                        stroke: {
+                            color: "red",
+                            width: 2
+                        },
+                        scale: 3
+                    }
+                }]
+        }
     };
     exports.Select = Select;
 });
-define("ol3-draw/mapmaker", ["require", "exports", "openlayers", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, common_7) {
-    "use strict";
-    var MapMaker = (function () {
-        function MapMaker() {
-        }
-        MapMaker.create = function (options) {
-            options = common_7.mixin(common_7.mixin({}, MapMaker.DEFAULT_OPTIONS), options);
-            options.target.classList.add("ol-map");
-            common_7.cssin("mapmaker", "\n        .ol-map {\n            top: 0;\n            left: 0;\n            right: 0;\n            bottom:0;\n            position: absolute;\n        }\n        ");
-            var map = new ol.Map({
-                target: options.target,
-                keyboardEventTarget: document,
-                loadTilesWhileAnimating: true,
-                loadTilesWhileInteracting: true,
-                controls: ol.control.defaults({ attribution: false }),
-                view: new ol.View({
-                    projection: options.projection,
-                    center: options.center,
-                    zoom: options.zoom
-                }),
-                layers: [
-                    new ol.layer.Tile({
-                        opacity: 0.8,
-                        source: new ol.source.OSM()
-                    })
-                ]
-            });
-            return map;
-        };
-        return MapMaker;
-    }());
-    MapMaker.DEFAULT_OPTIONS = {};
-    exports.MapMaker = MapMaker;
-});
-define("ol3-draw/examples/ol3-draw", ["require", "exports", "bower_components/ol3-fun/ol3-fun/common", "ol3-draw/ol3-button", "ol3-draw/ol3-delete", "ol3-draw/ol3-draw", "ol3-draw/ol3-edit", "ol3-draw/ol3-translate", "ol3-draw/ol3-select", "ol3-draw/mapmaker"], function (require, exports, common_8, ol3_button_6, ol3_delete_1, ol3_draw_1, ol3_edit_1, ol3_translate_1, ol3_select_1, mapmaker_1) {
+define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "bower_components/ol3-fun/ol3-fun/common", "ol3-draw/ol3-button", "ol3-draw/ol3-delete", "ol3-draw/ol3-draw", "ol3-draw/ol3-edit", "ol3-draw/ol3-translate", "ol3-draw/ol3-select", "ol3-draw/examples/mapmaker"], function (require, exports, ol, common_8, ol3_button_6, ol3_delete_1, ol3_draw_1, ol3_edit_1, ol3_translate_1, ol3_select_1, mapmaker_1) {
     "use strict";
     function stopInteraction(map, type) {
         map.getInteractions()
@@ -1149,9 +1175,26 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "bower_components/ol
         });
         //▲ ▬ ◇ ● ◯ ▧ ★
         var toolbar = [
-            ol3_select_1.Select.create({ map: map, label: "?", eventName: "info" }),
-            ol3_draw_1.Draw.create({ map: map, geometryType: "Polygon", label: "▧", title: "Polygon" }),
-            ol3_draw_1.Draw.create({ map: map, geometryType: "MultiLineString", label: "▬", title: "Line" }),
+            ol3_select_1.Select.create({ map: map, label: "?", eventName: "info", boxSelectCondition: ol.events.condition.primaryAction }),
+            ol3_draw_1.Draw.create({
+                map: map, geometryType: "Polygon", label: "▧", title: "Polygon", style: [
+                    {
+                        fill: {
+                            color: "rgba(255,0,0,0.5)"
+                        },
+                        stroke: {
+                            color: "rgba(0,0,0,1)",
+                            width: 5
+                        }
+                    },
+                    {
+                        stroke: {
+                            color: "rgba(255,255,255,1)",
+                            width: 1
+                        }
+                    }
+                ]
+            }),
             ol3_draw_1.Draw.create({
                 map: map, geometryType: "Circle", label: "◯", title: "Circle", style: [
                     {
@@ -1165,7 +1208,33 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "bower_components/ol
                     }
                 ]
             }),
-            ol3_draw_1.Draw.create({ map: map, geometryType: "Point", label: "●", title: "Point" }),
+            ol3_draw_1.Draw.create({ map: map, geometryType: "MultiLineString", label: "▬", title: "Line" }),
+            ol3_draw_1.Draw.create({
+                map: map, geometryType: "Point", label: "●", title: "Point"
+            }),
+            ol3_draw_1.Draw.create({
+                map: map, geometryType: "Point", label: "★", title: "Gradient", style: [
+                    {
+                        "star": {
+                            "fill": {
+                                "gradient": {
+                                    "type": "linear(1,0,3,46)",
+                                    "stops": "rgba(30,186,19,0.22) 0%;rgba(4,75,1,0.48) 70%;rgba(12,95,37,0.56) 77%;rgba(45,53,99,0.72) 100%"
+                                }
+                            },
+                            "opacity": 1,
+                            "stroke": {
+                                "color": "rgba(26,39,181,0.82)",
+                                "width": 8
+                            },
+                            "radius": 23,
+                            "radius2": 15,
+                            "points": 20,
+                            "scale": 1
+                        }
+                    }
+                ]
+            }),
             ol3_translate_1.Translate.create({ map: map, label: "↔" }),
             ol3_edit_1.Modify.create({ map: map, label: "Δ" }),
             ol3_delete_1.Delete.create({ map: map, label: "␡" }),
@@ -1175,7 +1244,7 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "bower_components/ol
         ];
         toolbar.forEach(function (t, i) { return t.setPosition("left top" + (-i * 2 || '')); });
         {
-            var h_1 = common_8.cssin("ol3-draw", ".ol-zoom { top: 0.5em; right: 0.5em; left: auto;}");
+            var h_1 = common_8.cssin("ol3-draw", "\n        .ol-zoom { top: 0.5em; right: 0.5em; left: auto;}\n        .ol-zoom button {color: rgba(0,60,136,1); background-color: transparent; }\n        .ol-overviewmap { right: .5em; top: 4.5em; left: auto; bottom: auto;}\n        ");
             map.on("exit", function () {
                 toolbar.forEach(function (t) { return t.destroy(); });
                 h_1();

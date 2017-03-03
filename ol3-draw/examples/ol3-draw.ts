@@ -44,9 +44,28 @@ export function run() {
 
     //▲ ▬ ◇ ● ◯ ▧ ★
     let toolbar = [
-        Select.create({ map: map, label: "?", eventName: "info" }),
+        Select.create({ map: map, label: "?", eventName: "info", boxSelectCondition: ol.events.condition.primaryAction }),
 
-        Draw.create({ map: map, geometryType: "Polygon", label: "▧", title: "Polygon" }),
+        Draw.create({
+            map: map, geometryType: "Polygon", label: "▧", title: "Polygon", style: [
+                {
+                    fill: {
+                        color: "rgba(255,0,0,0.5)"
+                    },
+                    stroke: {
+                        color: "rgba(0,0,0,1)",
+                        width: 5
+                    }
+                },
+                {
+                    stroke: {
+                        color: "rgba(255,255,255,1)",
+                        width: 1
+                    }
+                }
+
+            ]
+        }),
         Draw.create({
             map: map, geometryType: "Circle", label: "◯", title: "Circle", style: [
                 {
@@ -61,7 +80,32 @@ export function run() {
             ]
         }),
         Draw.create({ map: map, geometryType: "MultiLineString", label: "▬", title: "Line" }),
-        Draw.create({ map: map, geometryType: "Point", label: "●", title: "Point" }),
+        Draw.create({
+            map: map, geometryType: "Point", label: "●", title: "Point"
+        }),
+        Draw.create({
+            map: map, geometryType: "Point", label: "★", title: "Gradient", style: [
+                {
+                    "star": {
+                        "fill": {
+                            "gradient": {
+                                "type": "linear(1,0,3,46)",
+                                "stops": "rgba(30,186,19,0.22) 0%;rgba(4,75,1,0.48) 70%;rgba(12,95,37,0.56) 77%;rgba(45,53,99,0.72) 100%"
+                            }
+                        },
+                        "opacity": 1,
+                        "stroke": {
+                            "color": "rgba(26,39,181,0.82)",
+                            "width": 8
+                        },
+                        "radius": 23,
+                        "radius2": 15,
+                        "points": 20,
+                        "scale": 1
+                    }
+                }
+            ]
+        }),
 
         Translate.create({ map: map, label: "↔" }),
         Modify.create({ map: map, label: "Δ" }),
@@ -78,6 +122,7 @@ export function run() {
 
         let h = cssin("ol3-draw", `
         .ol-zoom { top: 0.5em; right: 0.5em; left: auto;}
+        .ol-zoom button {color: rgba(0,60,136,1); background-color: transparent; }
         .ol-overviewmap { right: .5em; top: 4.5em; left: auto; bottom: auto;}
         `);
         map.on("exit", () => {

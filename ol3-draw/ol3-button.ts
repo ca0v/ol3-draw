@@ -106,12 +106,16 @@ export class Button extends ol.control.Control {
         this.handlers.push(cssin(className, `
             .${className} {
                 position: absolute;
-                background: #ccc;
+                background-color: rgba(255,255,255,.4);
             }
             .${className}.active {
                 background-color: white;
             }
+            .${className}:hover {
+                background-color: white;
+            }
             .${className} input[type="button"] {
+                color: rgba(0,60,136,1);
                 background: transparent;
                 border: none;
                 width: 2em;

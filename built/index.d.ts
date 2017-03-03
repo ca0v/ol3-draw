@@ -216,6 +216,19 @@ declare module "index" {
 declare module "ol3-draw/examples/index" {
     export function run(): void;
 }
+declare module "ol3-draw/examples/mapmaker" {
+    import ol = require("openlayers");
+    export class MapMaker {
+        static DEFAULT_OPTIONS: olx.MapOptions;
+        static create(options: {
+            target: Element;
+            center: [number, number];
+            projection: string;
+            zoom: number;
+            basemap: string;
+        }): ol.Map;
+    }
+}
 declare module "ol3-draw/ol3-delete" {
     import { Button, ButtonOptions as IButtonOptions } from "ol3-draw/ol3-button";
     export interface DeleteControlOptions extends IButtonOptions {
@@ -249,26 +262,20 @@ declare module "ol3-draw/ol3-translate" {
     }
 }
 declare module "ol3-draw/ol3-select" {
+    import ol = require("openlayers");
     import { Button, ButtonOptions as IButtonOptions } from "ol3-draw/ol3-button";
-    export interface IOptions extends IButtonOptions {
+    import { Format } from "bower_components/ol3-symbolizer/index";
+    export interface SelectOptions extends IButtonOptions {
+        multi?: boolean;
+        style?: {
+            [name: string]: Format.Style[];
+        };
+        boxSelectCondition?: (mapBrowserEvent: ol.MapBrowserEvent) => boolean;
     }
     export class Select extends Button {
-        static DEFAULT_OPTIONS: IOptions;
-        static create(options?: IOptions): Button;
-        constructor(options: IOptions);
-    }
-}
-declare module "ol3-draw/mapmaker" {
-    import ol = require("openlayers");
-    export class MapMaker {
-        static DEFAULT_OPTIONS: olx.MapOptions;
-        static create(options: {
-            target: Element;
-            center: [number, number];
-            projection: string;
-            zoom: number;
-            basemap: string;
-        }): ol.Map;
+        static DEFAULT_OPTIONS: SelectOptions;
+        static create(options?: SelectOptions): Button;
+        constructor(options: SelectOptions);
     }
 }
 declare module "ol3-draw/examples/ol3-draw" {
