@@ -162,7 +162,8 @@ declare module "bower_components/ol3-symbolizer/index" {
 }
 declare module "ol3-draw/ol3-button" {
     import ol = require("openlayers");
-    export interface IOptions extends olx.control.ControlOptions {
+    import { StyleConverter } from "bower_components/ol3-symbolizer/index";
+    export interface ButtonOptions extends olx.control.ControlOptions {
         map?: ol.Map;
         className?: string;
         position?: string;
@@ -172,18 +173,22 @@ declare module "ol3-draw/ol3-button" {
         buttonType?: typeof Button;
     }
     export class Button extends ol.control.Control {
-        static DEFAULT_OPTIONS: IOptions;
-        static create(options?: IOptions): Button;
-        options: IOptions;
-        constructor(options: IOptions);
+        static DEFAULT_OPTIONS: ButtonOptions;
+        static create(options?: ButtonOptions): Button;
+        options: ButtonOptions;
+        handlers: Array<() => void>;
+        symbolizer: StyleConverter;
+        constructor(options: ButtonOptions);
+        setPosition(position: string): void;
+        destroy(): void;
         cssin(): void;
         setMap(map: ol.Map): void;
     }
 }
 declare module "ol3-draw/ol3-draw" {
     import ol = require("openlayers");
-    import { Button, IOptions as IButtonOptions } from "ol3-draw/ol3-button";
-    export interface DrawControlOptions extends IButtonOptions {
+    import { Button, ButtonOptions as ButtonOptions } from "ol3-draw/ol3-button";
+    export interface DrawControlOptions extends ButtonOptions {
         map?: ol.Map;
         layers?: Array<ol.layer.Vector>;
         geometryType?: "Point" | "LineString" | "LinearRing" | "Polygon" | "MultiPoint" | "MultiLineString" | "MultiPolygon" | "GeometryCollection" | "Circle";
@@ -194,7 +199,7 @@ declare module "ol3-draw/ol3-draw" {
         static create(options?: DrawControlOptions): Button;
         private interactions;
         private createInteraction();
-        setMap(map: ol.Map): void;
+        constructor(options: DrawControlOptions);
     }
 }
 declare module "index" {
@@ -210,38 +215,45 @@ declare module "ol3-draw/examples/index" {
     export function run(): void;
 }
 declare module "ol3-draw/ol3-delete" {
-    import ol = require("openlayers");
-    import { Button, IOptions as IButtonOptions } from "ol3-draw/ol3-button";
+    import { Button, ButtonOptions as IButtonOptions } from "ol3-draw/ol3-button";
     export interface DeleteControlOptions extends IButtonOptions {
     }
     export class Delete extends Button {
         static DEFAULT_OPTIONS: DeleteControlOptions;
         options: DeleteControlOptions;
         static create(options?: DeleteControlOptions): Button;
-        setMap(map: ol.Map): void;
+        constructor(options: DeleteControlOptions);
     }
 }
 declare module "ol3-draw/ol3-edit" {
-    import ol = require("openlayers");
-    import { Button, IOptions as IButtonOptions } from "ol3-draw/ol3-button";
+    import { Button, ButtonOptions as IButtonOptions } from "ol3-draw/ol3-button";
     export interface EditControlOptions extends IButtonOptions {
     }
     export class Modify extends Button {
         static DEFAULT_OPTIONS: EditControlOptions;
         static create(options?: EditControlOptions): Button;
         options: EditControlOptions;
-        setMap(map: ol.Map): void;
+        constructor(options: EditControlOptions);
     }
 }
 declare module "ol3-draw/ol3-translate" {
-    import ol = require("openlayers");
-    import { Button, IOptions as IButtonOptions } from "ol3-draw/ol3-button";
-    export interface IOptions extends IButtonOptions {
+    import { Button, ButtonOptions as IButtonOptions } from "ol3-draw/ol3-button";
+    export interface TranslateControlOptions extends IButtonOptions {
     }
     export class Translate extends Button {
+        static DEFAULT_OPTIONS: TranslateControlOptions;
+        static create(options?: TranslateControlOptions): Button;
+        constructor(options: TranslateControlOptions);
+    }
+}
+declare module "ol3-draw/ol3-select" {
+    import { Button, ButtonOptions as IButtonOptions } from "ol3-draw/ol3-button";
+    export interface IOptions extends IButtonOptions {
+    }
+    export class Select extends Button {
         static DEFAULT_OPTIONS: IOptions;
         static create(options?: IOptions): Button;
-        setMap(map: ol.Map): void;
+        constructor(options: IOptions);
     }
 }
 declare module "ol3-draw/mapmaker" {
