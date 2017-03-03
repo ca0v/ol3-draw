@@ -188,9 +188,11 @@ declare module "ol3-draw/ol3-button" {
 declare module "ol3-draw/ol3-draw" {
     import ol = require("openlayers");
     import { Button, ButtonOptions as ButtonOptions } from "ol3-draw/ol3-button";
+    import { Format } from "bower_components/ol3-symbolizer/index";
     export interface DrawControlOptions extends ButtonOptions {
         map?: ol.Map;
         layers?: Array<ol.layer.Vector>;
+        style?: Format.Style[];
         geometryType?: "Point" | "LineString" | "LinearRing" | "Polygon" | "MultiPoint" | "MultiLineString" | "MultiPolygon" | "GeometryCollection" | "Circle";
     }
     export class Draw extends Button {

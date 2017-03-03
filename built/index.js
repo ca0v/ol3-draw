@@ -674,36 +674,7 @@ define("ol3-draw/ol3-draw", ["require", "exports", "openlayers", "ol3-draw/ol3-b
                     interaction && interaction.setActive(false);
                 }
             });
-            var style = [
-                {
-                    circle: {
-                        radius: 12,
-                        opacity: 1,
-                        fill: {
-                            color: "rgba(0,0,0,0.5)"
-                        },
-                        stroke: {
-                            color: "rgba(255,255,255,1)",
-                            width: 3
-                        }
-                    }
-                },
-                {
-                    fill: {
-                        color: "rgba(0,0,0,0.5)"
-                    },
-                    stroke: {
-                        color: "rgba(255,255,255,1)",
-                        width: 5
-                    }
-                },
-                {
-                    stroke: {
-                        color: "rgba(0,0,0,1)",
-                        width: 1
-                    }
-                }
-            ].map(function (s) { return _this.symbolizer.fromJson(s); });
+            var style = _this.options.style.map(function (s) { return _this.symbolizer.fromJson(s); });
             if (!options.layers) {
                 var layer = new ol.layer.Vector({
                     style: style,
@@ -741,7 +712,37 @@ define("ol3-draw/ol3-draw", ["require", "exports", "openlayers", "ol3-draw/ol3-b
         label: "Draw",
         title: "Draw",
         buttonType: Draw,
-        eventName: "draw-feature"
+        eventName: "draw-feature",
+        style: [
+            {
+                circle: {
+                    radius: 12,
+                    opacity: 1,
+                    fill: {
+                        color: "rgba(0,0,0,0.5)"
+                    },
+                    stroke: {
+                        color: "rgba(255,255,255,1)",
+                        width: 3
+                    }
+                }
+            },
+            {
+                fill: {
+                    color: "rgba(0,0,0,0.5)"
+                },
+                stroke: {
+                    color: "rgba(255,255,255,1)",
+                    width: 5
+                }
+            },
+            {
+                stroke: {
+                    color: "rgba(0,0,0,1)",
+                    width: 1
+                }
+            }
+        ]
     };
     exports.Draw = Draw;
 });
@@ -1149,16 +1150,28 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "bower_components/ol
         //▲ ▬ ◇ ● ◯ ▧ ★
         var toolbar = [
             ol3_select_1.Select.create({ map: map, label: "?", eventName: "info" }),
-            ol3_draw_1.Draw.create({ map: map, geometryType: "Polygon", label: "▧" }),
-            ol3_draw_1.Draw.create({ map: map, geometryType: "MultiLineString", label: "▬" }),
-            ol3_draw_1.Draw.create({ map: map, geometryType: "Circle", label: "◯" }),
-            ol3_draw_1.Draw.create({ map: map, geometryType: "Point", label: "●" }),
+            ol3_draw_1.Draw.create({ map: map, geometryType: "Polygon", label: "▧", title: "Polygon" }),
+            ol3_draw_1.Draw.create({ map: map, geometryType: "MultiLineString", label: "▬", title: "Line" }),
+            ol3_draw_1.Draw.create({
+                map: map, geometryType: "Circle", label: "◯", title: "Circle", style: [
+                    {
+                        fill: {
+                            color: "rgba(255,0,0,0.5)"
+                        },
+                        stroke: {
+                            color: "rgba(255,255,255,1)",
+                            width: 3
+                        }
+                    }
+                ]
+            }),
+            ol3_draw_1.Draw.create({ map: map, geometryType: "Point", label: "●", title: "Point" }),
             ol3_translate_1.Translate.create({ map: map, label: "↔" }),
             ol3_edit_1.Modify.create({ map: map, label: "Δ" }),
             ol3_delete_1.Delete.create({ map: map, label: "␡" }),
             ol3_button_6.Button.create({ map: map, label: "⎚", title: "Clear", eventName: "clear-drawings" }),
-            ol3_button_6.Button.create({ map: map, label: "💾", eventName: "save" }),
-            ol3_button_6.Button.create({ map: map, label: "X", eventName: "exit" }),
+            ol3_button_6.Button.create({ map: map, label: "💾", eventName: "save", title: "Save" }),
+            ol3_button_6.Button.create({ map: map, label: "X", eventName: "exit", title: "Exit" }),
         ];
         toolbar.forEach(function (t, i) { return t.setPosition("left top" + (-i * 2 || '')); });
         {

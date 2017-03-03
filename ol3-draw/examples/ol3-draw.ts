@@ -46,10 +46,22 @@ export function run() {
     let toolbar = [
         Select.create({ map: map, label: "?", eventName: "info" }),
 
-        Draw.create({ map: map, geometryType: "Polygon", label: "▧" }),
-        Draw.create({ map: map, geometryType: "MultiLineString", label: "▬" }),
-        Draw.create({ map: map, geometryType: "Circle", label: "◯" }),
-        Draw.create({ map: map, geometryType: "Point", label: "●" }),
+        Draw.create({ map: map, geometryType: "Polygon", label: "▧", title: "Polygon" }),
+        Draw.create({ map: map, geometryType: "MultiLineString", label: "▬", title: "Line" }),
+        Draw.create({
+            map: map, geometryType: "Circle", label: "◯", title: "Circle", style: [
+                {
+                    fill: {
+                        color: "rgba(255,0,0,0.5)"
+                    },
+                    stroke: {
+                        color: "rgba(255,255,255,1)",
+                        width: 3
+                    }
+                }
+            ]
+        }),
+        Draw.create({ map: map, geometryType: "Point", label: "●", title: "Point" }),
 
         Translate.create({ map: map, label: "↔" }),
         Modify.create({ map: map, label: "Δ" }),
@@ -57,8 +69,8 @@ export function run() {
         Delete.create({ map: map, label: "␡" }),
         Button.create({ map: map, label: "⎚", title: "Clear", eventName: "clear-drawings" }),
 
-        Button.create({ map: map, label: "💾", eventName: "save" }),
-        Button.create({ map: map, label: "X", eventName: "exit" }),
+        Button.create({ map: map, label: "💾", eventName: "save", title: "Save" }),
+        Button.create({ map: map, label: "X", eventName: "exit", title: "Exit" }),
     ];
     toolbar.forEach((t, i) => t.setPosition(`left top${-i * 2 || ''}`));
 

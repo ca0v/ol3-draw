@@ -1,10 +1,12 @@
 import ol = require("openlayers");
 import { Button, ButtonOptions as ButtonOptions } from "./ol3-button";
 import { html, mixin } from "ol3-fun/ol3-fun/common";
+import { Format } from "ol3-symbolizer";
 
 export interface DrawControlOptions extends ButtonOptions {
     map?: ol.Map;
     layers?: Array<ol.layer.Vector>;
+    style?: Format.Style[];
     geometryType?: "Point" | "LineString" | "LinearRing" | "Polygon" | "MultiPoint" | "MultiLineString" | "MultiPolygon" | "GeometryCollection" | "Circle";
 }
 
@@ -15,7 +17,37 @@ export class Draw extends Button {
         label: "Draw",
         title: "Draw",
         buttonType: Draw,
-        eventName: "draw-feature"
+        eventName: "draw-feature",
+        style: [
+            {
+                circle: {
+                    radius: 12,
+                    opacity: 1,
+                    fill: {
+                        color: "rgba(0,0,0,0.5)"
+                    },
+                    stroke: {
+                        color: "rgba(255,255,255,1)",
+                        width: 3
+                    }
+                }
+            },
+            {
+                fill: {
+                    color: "rgba(0,0,0,0.5)"
+                },
+                stroke: {
+                    color: "rgba(255,255,255,1)",
+                    width: 5
+                }
+            },
+            {
+                stroke: {
+                    color: "rgba(0,0,0,1)",
+                    width: 1
+                }
+            }
+        ]
     }
 
     public options: DrawControlOptions;
@@ -69,36 +101,7 @@ export class Draw extends Button {
             }
         });
 
-        let style = [
-            {
-                circle: {
-                    radius: 12,
-                    opacity: 1,
-                    fill: {
-                        color: "rgba(0,0,0,0.5)"
-                    },
-                    stroke: {
-                        color: "rgba(255,255,255,1)",
-                        width: 3
-                    }
-                }
-            },
-            {
-                fill: {
-                    color: "rgba(0,0,0,0.5)"
-                },
-                stroke: {
-                    color: "rgba(255,255,255,1)",
-                    width: 5
-                }
-            },
-            {
-                stroke: {
-                    color: "rgba(0,0,0,1)",
-                    width: 1
-                }
-            }
-        ].map(s => this.symbolizer.fromJson(s));
+        let style = this.options.style.map(s => this.symbolizer.fromJson(s));
 
         if (!options.layers) {
             let layer = new ol.layer.Vector({
