@@ -21,7 +21,7 @@ export class Translate extends Button {
         return Button.create(options);
     }
 
-    constructor (options: TranslateControlOptions) {
+    constructor(options: TranslateControlOptions) {
         super(options);
 
         let map = options.map;
@@ -38,15 +38,17 @@ export class Translate extends Button {
             translate.setActive(true);
         });
 
-        [select, translate].forEach(i => {
-            i.setActive(false);
-            options.map.addInteraction(i);
-        });
-
-        this.handlers.push(() => {
+        this.once("change:active", () => {
             [select, translate].forEach(i => {
                 i.setActive(false);
-                options.map.removeInteraction(i);
+                options.map.addInteraction(i);
+            });
+
+            this.handlers.push(() => {
+                [select, translate].forEach(i => {
+                    i.setActive(false);
+                    options.map.removeInteraction(i);
+                });
             });
         });
 

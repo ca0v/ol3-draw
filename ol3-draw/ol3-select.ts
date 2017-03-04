@@ -108,8 +108,6 @@ export class Select extends Button {
     constructor(options: SelectOptions) {
         super(options);
 
-        let map = options.map;
-
         let selection = new ol.interaction.Select({
             condition: ol.events.condition.click,
             multi: options.multi,
@@ -125,31 +123,37 @@ export class Select extends Button {
         let boxSelect = new ol.interaction.DragBox({
             condition: options.boxSelectCondition
         });
-        boxSelect.setActive(false);
-        map.addInteraction(boxSelect);
 
-        {
-            let boxStartCoordinate: ol.Coordinate;
+        boxSelect.on("boxend", args => {
+            let extent = boxSelect.getGeometry().getExtent();
+            let features = selection.getFeatures().getArray();
+            options.map.getLayers()
+                .getArray()
+                .filter(l => l instanceof ol.layer.Vector)
+                .map(l => <ol.layer.Vector>l)
+                .forEach(l => l.getSource().forEachFeatureIntersectingExtent(extent, feature => {
+                    if (-1 === features.indexOf(feature)) {
+                        selection.getFeatures().push(feature);
+                    } else {
+                        selection.getFeatures().remove(feature);
+                    }
+                }));
+        });
 
-            boxSelect.on("boxend", args => {
-                let extent = boxSelect.getGeometry().getExtent();
-                let features = selection.getFeatures().getArray();
-                map.getLayers()
-                    .getArray()
-                    .filter(l => l instanceof ol.layer.Vector)
-                    .map(l => <ol.layer.Vector>l)
-                    .forEach(l => l.getSource().forEachFeatureIntersectingExtent(extent, feature => {
-                        if (-1 === features.indexOf(feature)) {
-                            selection.getFeatures().push(feature);
-                        } else {
-                            selection.getFeatures().remove(feature);                            
-                        }
-                    }));
+        this.once("change:active", () => {
+
+            [boxSelect, selection].forEach(i => {
+                i.setActive(false);
+                options.map.addInteraction(i);
             });
-        }
 
-        selection.setActive(false);
-        map.addInteraction(selection);
+            this.handlers.push(() => {
+                [boxSelect, selection].forEach(i => {
+                    i.setActive(false);
+                    options.map.removeInteraction(i);
+                });
+            });
+        });
 
         this.on("change:active", () => {
             let active = this.get("active");

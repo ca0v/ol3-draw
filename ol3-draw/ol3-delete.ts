@@ -25,7 +25,7 @@ export class Delete extends Button {
 
     constructor(options: DeleteControlOptions) {
         super(options);
-        
+
         let map = options.map;
         let select = new ol.interaction.Select({
             wrapX: false,
@@ -92,14 +92,6 @@ export class Delete extends Button {
             }
         });
 
-        select.setActive(false);
-        map.addInteraction(select);
-
-        this.handlers.push(() => {
-            select.setActive(false);
-            map.removeInteraction(select);
-        });
-
         let doit = () => {
             select.getFeatures().forEach(f => {
                 let l = select.getLayer(f);
@@ -107,6 +99,16 @@ export class Delete extends Button {
             });
             select.getFeatures().clear();
         }
+
+        this.once("change:active", () => {
+            select.setActive(false);
+            map.addInteraction(select);
+
+            this.handlers.push(() => {
+                select.setActive(false);
+                map.removeInteraction(select);
+            });
+        });
 
         this.on("change:active", () => {
             let active = this.get("active");

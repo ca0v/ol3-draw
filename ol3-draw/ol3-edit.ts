@@ -36,15 +36,17 @@ export class Modify extends Button {
             modify.setActive(true);
         });
 
-        [select, modify].forEach(i => {
-            i.setActive(false);
-            options.map.addInteraction(i);
-        });
-
-        this.handlers.push(() => {
+        this.once("change:active", () => {
             [select, modify].forEach(i => {
                 i.setActive(false);
-                options.map.removeInteraction(i);
+                options.map.addInteraction(i);
+            });
+
+            this.handlers.push(() => {
+                [select, modify].forEach(i => {
+                    i.setActive(false);
+                    options.map.removeInteraction(i);
+                });
             });
         });
 

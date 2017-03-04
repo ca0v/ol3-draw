@@ -128,6 +128,7 @@ export class Button extends ol.control.Control {
     setMap(map: ol.Map) {
         let options = this.options;
         super.setMap(map);
+        options.map = map;
 
         if (!map) {
             this.destroy();
