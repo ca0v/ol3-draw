@@ -193,7 +193,7 @@ export function run() {
         Translate.create({ map: map, label: "↔" }),
         Modify.create({ map: map, label: "Δ" }),
 
-        Delete.create({ map: map, label: "␡" }),
+        Delete.create({ map: map, label: "␡", boxSelectCondition: ol.events.condition.primaryAction }),
         Button.create({ map: map, label: "⎚", title: "Clear", eventName: "clear-drawings" }),
 
         Button.create({ map: map, label: "💾", eventName: "save", title: "Save" }),
