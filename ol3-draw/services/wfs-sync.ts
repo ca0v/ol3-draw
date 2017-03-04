@@ -106,13 +106,16 @@ export class WfsSync {
                 let srsOut = new ol.proj.Projection({ code: this.options.srsName });
                 toSave = toSave.map(f => f.clone());
                 toSave.forEach(f => f.getGeometry().transform(srsIn, srsOut));
-                debugger;
+                throw "should not be necessary, perform on server, cloning will prevent insert key from updating";
             }
 
             let format = this.options.formatter;
+            let toInsert = toSave.filter(f => !f.get(this.options.featureIdFieldName));
+            let toUpdate = toSave.filter(f => !!f.get(this.options.featureIdFieldName));
+
             let requestBody = format.writeTransaction(
-                toSave.filter(f => !f.get(this.options.featureIdFieldName)),
-                toSave.filter(f => !!f.get(this.options.featureIdFieldName)),
+                toInsert,
+                toUpdate,
                 toDelete,
                 {
                     featureNS: this.options.featureNS,
@@ -122,17 +125,42 @@ export class WfsSync {
                     nativeElements: []
                 });
 
-            let data = serializer.serializeToString(requestBody);
-            console.log("data", data);
+            type ResponseType = {
+                "transactionSummary": {
+                    "totalInserted": number;
+                    "totalUpdated": number;
+                    "totalDeleted": number;
+                },
+                "insertIds": string[]
+            };
 
             $.ajax({
                 type: "POST",
                 url: this.options.wfsUrl,
-                data: data,
+                data: serializer.serializeToString(requestBody),
                 contentType: "application/xml",
                 dataType: "xml",
                 success: (response: XMLDocument) => {
-                    console.warn("TODO: key assignment", serializer.serializeToString(response));
+                    let responseInfo = <ResponseType><any>format.readTransactionResponse(response);
+                    if (responseInfo.transactionSummary.totalDeleted) {
+                        console.log("totalDeleted: ", responseInfo.transactionSummary.totalDeleted);
+                    }
+                    if (responseInfo.transactionSummary.totalInserted) {
+                        console.log("totalInserted: ", responseInfo.transactionSummary.totalInserted);
+                    }
+                    if (responseInfo.transactionSummary.totalUpdated) {
+                        console.log("totalUpdated: ", responseInfo.transactionSummary.totalUpdated);
+                    }
+
+                    console.assert(toInsert.length === responseInfo.transactionSummary.totalInserted, "number inserted should equal number of new keys");
+
+                    toInsert.forEach((f, i) => {
+                        let id = responseInfo.insertIds[i];
+                        // how to know to use "gid"?
+                        f.set("gid", id.split(".").pop());
+                        f.setId(id);
+                    });
+
                 }
             });
         };
