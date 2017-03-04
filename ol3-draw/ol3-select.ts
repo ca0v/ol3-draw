@@ -78,6 +78,25 @@ export class Select extends Button {
                     scale: 3
                 }
             }],
+            "MultiPolygon": [{
+                fill: {
+                    color: "blue"
+                },
+                stroke: {
+                    color: "red",
+                    width: 2
+                },
+                text: {
+                    fill: {
+                        color: "white"
+                    },
+                    stroke: {
+                        color: "red",
+                        width: 2
+                    },
+                    scale: 3
+                }
+            }],
             "Polygon": [{
                 fill: {
                     color: "blue"
@@ -157,8 +176,7 @@ export class Select extends Button {
 
         this.on("change:active", () => {
             let active = this.get("active");
-            selection.setActive(active);
-            boxSelect.setActive(active);
+            [boxSelect, selection].forEach(i => i.setActive(active));
             if (!active) selection.getFeatures().clear();
         });
 
