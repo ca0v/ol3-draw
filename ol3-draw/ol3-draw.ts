@@ -8,12 +8,15 @@ export interface DrawControlOptions extends ButtonOptions {
     layers?: Array<ol.layer.Vector>;
     style?: Format.Style[];
     geometryType?: "Point" | "LineString" | "LinearRing" | "Polygon" | "MultiPoint" | "MultiLineString" | "MultiPolygon" | "GeometryCollection" | "Circle";
+    geometryName?: string;
 }
 
 export class Draw extends Button {
+    
     static DEFAULT_OPTIONS: DrawControlOptions = {
         className: "ol-draw",
         geometryType: "Point",
+        geometryName: "geom",
         label: "Draw",
         title: "Draw",
         buttonType: Draw,
@@ -65,6 +68,7 @@ export class Draw extends Button {
 
         let draw = new ol.interaction.Draw({
             type: options.geometryType,
+            geometryName: options.geometryName,
             source: source
         });
 

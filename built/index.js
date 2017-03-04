@@ -695,6 +695,7 @@ define("ol3-draw/ol3-draw", ["require", "exports", "openlayers", "ol3-draw/ol3-b
             var source = options.layers[0].getSource();
             var draw = new ol.interaction.Draw({
                 type: options.geometryType,
+                geometryName: options.geometryName,
                 source: source
             });
             draw.setActive(false);
@@ -709,6 +710,7 @@ define("ol3-draw/ol3-draw", ["require", "exports", "openlayers", "ol3-draw/ol3-b
     Draw.DEFAULT_OPTIONS = {
         className: "ol-draw",
         geometryType: "Point",
+        geometryName: "geom",
         label: "Draw",
         title: "Draw",
         buttonType: Draw,
@@ -1120,6 +1122,25 @@ define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3
                         scale: 3
                     }
                 }],
+            "Circle": [{
+                    fill: {
+                        color: "blue"
+                    },
+                    stroke: {
+                        color: "red",
+                        width: 2
+                    },
+                    text: {
+                        fill: {
+                            color: "white"
+                        },
+                        stroke: {
+                            color: "red",
+                            width: 2
+                        },
+                        scale: 3
+                    }
+                }],
             "Polygon": [{
                     fill: {
                         color: "blue"
@@ -1143,8 +1164,119 @@ define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3
     };
     exports.Select = Select;
 });
-define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "bower_components/ol3-fun/ol3-fun/common", "ol3-draw/ol3-button", "ol3-draw/ol3-delete", "ol3-draw/ol3-draw", "ol3-draw/ol3-edit", "ol3-draw/ol3-translate", "ol3-draw/ol3-select", "ol3-draw/examples/mapmaker"], function (require, exports, ol, common_8, ol3_button_6, ol3_delete_1, ol3_draw_1, ol3_edit_1, ol3_translate_1, ol3_select_1, mapmaker_1) {
+define("ol3-draw/services/wfs-sync", ["require", "exports", "openlayers", "jquery", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, $, common_8) {
     "use strict";
+    var serializer = new XMLSerializer();
+    var WfsSync = (function () {
+        function WfsSync(options) {
+            this.options = options;
+            this.lastSavedTime = Date.now();
+            this.deletes = [];
+            this.watch();
+        }
+        WfsSync.create = function (options) {
+            options = common_8.defaults(options || {}, WfsSync.DEFAULT_OPTIONS);
+            if (!options.formatter) {
+                options.formatter = new ol.format.WFS();
+            }
+            if (!options.srsName) {
+                // isn't generally set...better to get map from layer?
+                options.srsName = options.source.getProjection().getCode();
+            }
+            var result = new WfsSync(options);
+            return result;
+        };
+        WfsSync.prototype.watch = function () {
+            var _this = this;
+            var save = common_8.debounce(function () { return _this.saveDrawings({
+                features: _this.options.source.getFeatures().filter(function (f) { return !!f.get(_this.options.lastUpdateFieldName); })
+            }); }, 1000);
+            var touch = function (f) {
+                f.set(_this.options.lastUpdateFieldName, Date.now());
+                save();
+            };
+            var watch = function (f) {
+                f.getGeometry().on("change", function () { return touch(f); });
+                f.on("propertychange", function (args) {
+                    if (args.key === _this.options.lastUpdateFieldName)
+                        return;
+                    touch(f);
+                });
+            };
+            var source = this.options.source;
+            source.forEachFeature(function (f) { return watch(f); });
+            source.on("addfeature", function (args) {
+                args.feature.set("strname", "29615");
+                watch(args.feature);
+                touch(args.feature);
+            });
+            source.on("removefeature", function (args) {
+                _this.deletes.push(args.feature);
+                touch(args.feature);
+            });
+        };
+        WfsSync.prototype.saveDrawings = function (args) {
+            var _this = this;
+            var features = args.features.filter(function (f) { return _this.lastSavedTime <= f.get(_this.options.lastUpdateFieldName); });
+            features.forEach(function (f) { return f.set(_this.options.lastUpdateFieldName, undefined); });
+            console.log("saving", features.map(function (f) { return f.get(_this.options.lastUpdateFieldName); }));
+            var saveTo = function (featureType, geomType) {
+                var toSave = features.filter(function (f) { return f.getGeometry().getType() === geomType; });
+                var toDelete = _this.deletes.filter(function (f) { return !!f.get(_this.options.featureIdFieldName); });
+                if (0 === (toSave.length + toDelete.length)) {
+                    console.info("nothing to save", featureType, geomType);
+                    return;
+                }
+                // clone and transform as needed
+                if (_this.options.sourceSrs && _this.options.sourceSrs !== _this.options.srsName) {
+                    var srsIn_1 = new ol.proj.Projection({ code: _this.options.sourceSrs });
+                    var srsOut_1 = new ol.proj.Projection({ code: _this.options.srsName });
+                    toSave = toSave.map(function (f) { return f.clone(); });
+                    toSave.forEach(function (f) { return f.getGeometry().transform(srsIn_1, srsOut_1); });
+                    debugger;
+                }
+                var format = _this.options.formatter;
+                var requestBody = format.writeTransaction(toSave.filter(function (f) { return !f.get(_this.options.featureIdFieldName); }), toSave.filter(function (f) { return !!f.get(_this.options.featureIdFieldName); }), toDelete, {
+                    featureNS: _this.options.featureNS,
+                    featurePrefix: _this.options.featurePrefix,
+                    featureType: featureType,
+                    srsName: _this.options.srsName,
+                    nativeElements: []
+                });
+                var data = serializer.serializeToString(requestBody);
+                console.log("data", data);
+                $.ajax({
+                    type: "POST",
+                    url: _this.options.wfsUrl,
+                    data: data,
+                    contentType: "application/xml",
+                    dataType: "xml",
+                    success: function (response) {
+                        console.warn("TODO: key assignment", serializer.serializeToString(response));
+                    }
+                });
+            };
+            this.lastSavedTime = Date.now();
+            Object.keys(this.options.targets).forEach(function (k) {
+                saveTo(_this.options.targets[k], k);
+            });
+        };
+        return WfsSync;
+    }());
+    WfsSync.DEFAULT_OPTIONS = {
+        featureIdFieldName: "gid",
+        lastUpdateFieldName: "touched",
+    };
+    exports.WfsSync = WfsSync;
+});
+define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "jquery", "bower_components/ol3-fun/ol3-fun/common", "ol3-draw/ol3-button", "ol3-draw/ol3-delete", "ol3-draw/ol3-draw", "ol3-draw/ol3-edit", "ol3-draw/ol3-translate", "ol3-draw/ol3-select", "ol3-draw/examples/mapmaker", "ol3-draw/services/wfs-sync"], function (require, exports, ol, $, common_9, ol3_button_6, ol3_delete_1, ol3_draw_1, ol3_edit_1, ol3_translate_1, ol3_select_1, mapmaker_1, wfs_sync_1) {
+    "use strict";
+    var WFS_INFO = {
+        srsName: "EPSG:3857",
+        wfsUrl: "http://localhost:8080/geoserver/cite/wfs",
+        featureNS: "http://www.opengeospatial.net/cite",
+        featurePrefix: "cite",
+    };
     function stopInteraction(map, type) {
         map.getInteractions()
             .getArray()
@@ -1165,19 +1297,68 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "bower
             .filter(function (i) { return typeof i === typeof control; })
             .forEach(function (t) { return t !== control && t.set("active", false); });
     }
+    function loadAndWatch(args) {
+        var serializer = new XMLSerializer();
+        var format = new ol.format.WFS();
+        var requestBody = format.writeGetFeature({
+            featureNS: WFS_INFO.featureNS,
+            featurePrefix: WFS_INFO.featurePrefix,
+            featureTypes: [args.featureType],
+            srsName: WFS_INFO.srsName,
+            filter: ol.format.filter.equalTo("strname", "29615"),
+        });
+        var data = serializer.serializeToString(requestBody);
+        $.ajax({
+            type: "POST",
+            url: WFS_INFO.wfsUrl,
+            data: data,
+            contentType: "application/xml",
+            dataType: "xml",
+            success: function (response) {
+                var features = format.readFeatures(response);
+                features = features.filter(function (f) { return !!f.getGeometry(); });
+                args.source.addFeatures(features);
+                if (args.map) {
+                    var extent_1 = args.map.getView().calculateExtent(args.map.getSize());
+                    features.forEach(function (f) { return ol.extent.extend(extent_1, f.getGeometry().getExtent()); });
+                    args.map.getView().fit(extent_1, args.map.getSize());
+                }
+                wfs_sync_1.WfsSync.create({
+                    wfsUrl: WFS_INFO.wfsUrl,
+                    featureNS: WFS_INFO.featureNS,
+                    featurePrefix: WFS_INFO.featurePrefix,
+                    srsName: WFS_INFO.srsName,
+                    sourceSrs: WFS_INFO.srsName,
+                    source: args.source,
+                    targets: (_a = {},
+                        _a[args.geometryType] = args.featureType,
+                        _a)
+                });
+                var _a;
+            }
+        });
+    }
     function run() {
         var map = mapmaker_1.MapMaker.create({
             target: document.getElementsByClassName("map")[0],
-            projection: 'EPSG:4326',
-            center: [-82.4, 34.85],
-            zoom: 15,
+            projection: WFS_INFO.srsName,
+            center: [-9167000, 4148000],
+            zoom: 21,
             basemap: "osm"
         });
         //▲ ▬ ◇ ● ◯ ▧ ★
+        var pointLayer = new ol.layer.Vector({ source: new ol.source.Vector() });
+        var lineLayer = new ol.layer.Vector({ source: new ol.source.Vector() });
+        var polygonLayer = new ol.layer.Vector({ source: new ol.source.Vector() });
+        map.addLayer(polygonLayer);
+        map.addLayer(lineLayer);
+        map.addLayer(pointLayer);
         var toolbar = [
             ol3_select_1.Select.create({ map: map, label: "?", eventName: "info", boxSelectCondition: ol.events.condition.primaryAction }),
             ol3_draw_1.Draw.create({
-                map: map, geometryType: "Polygon", label: "▧", title: "Polygon", style: [
+                map: map, geometryType: "MultiPolygon", label: "▧", title: "Polygon",
+                layers: [polygonLayer],
+                style: [
                     {
                         fill: {
                             color: "rgba(255,0,0,0.5)"
@@ -1208,9 +1389,13 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "bower
                     }
                 ]
             }),
-            ol3_draw_1.Draw.create({ map: map, geometryType: "MultiLineString", label: "▬", title: "Line" }),
             ol3_draw_1.Draw.create({
-                map: map, geometryType: "Point", label: "●", title: "Point"
+                map: map, geometryType: "MultiLineString", label: "▬", title: "Line",
+                layers: [lineLayer]
+            }),
+            ol3_draw_1.Draw.create({
+                map: map, geometryType: "Point", label: "●", title: "Point",
+                layers: [pointLayer]
             }),
             ol3_draw_1.Draw.create({
                 map: map, geometryType: "Point", label: "★", title: "Gradient", style: [
@@ -1244,7 +1429,7 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "bower
         ];
         toolbar.forEach(function (t, i) { return t.setPosition("left top" + (-i * 2 || '')); });
         {
-            var h_1 = common_8.cssin("ol3-draw", "\n        .ol-zoom { top: 0.5em; right: 0.5em; left: auto;}\n        .ol-zoom button {color: rgba(0,60,136,1); background-color: transparent; }\n        .ol-overviewmap { right: .5em; top: 4.5em; left: auto; bottom: auto;}\n        ");
+            var h_1 = common_9.cssin("ol3-draw", "\n        .ol-zoom { top: 0.5em; right: 0.5em; left: auto;}\n        .ol-zoom button {color: rgba(0,60,136,1); background-color: transparent; }\n        .ol-overviewmap { right: .5em; top: 4.5em; left: auto; bottom: auto;}\n        ");
             map.on("exit", function () {
                 toolbar.forEach(function (t) { return t.destroy(); });
                 h_1();
@@ -1307,6 +1492,24 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "bower
                 }
             });
         }
+        loadAndWatch({
+            map: map,
+            geometryType: "Point",
+            featureType: "addresses",
+            source: pointLayer.getSource()
+        });
+        loadAndWatch({
+            map: map,
+            geometryType: "MultiLineString",
+            featureType: "streets",
+            source: lineLayer.getSource()
+        });
+        loadAndWatch({
+            map: map,
+            geometryType: "MultiPolygon",
+            featureType: "parcels",
+            source: polygonLayer.getSource()
+        });
     }
     exports.run = run;
 });

@@ -12,7 +12,8 @@
   "dependencies": {
     "openlayers": "https://github.com/openlayers/openlayers/releases/download/v4.0.1/v4.0.1-dist.zip",
     "requirejs": "^2.3.2",
-    "ol3-fun": "git://github.com/ca0v/ol3-fun.git#v4.0.1"
+    "ol3-fun": "git://github.com/ca0v/ol3-fun.git#v4.0.1",
+    "proj4": "^2.4.3"
   },
   "moduleType": [
     "amd"

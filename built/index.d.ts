@@ -194,6 +194,7 @@ declare module "ol3-draw/ol3-draw" {
         layers?: Array<ol.layer.Vector>;
         style?: Format.Style[];
         geometryType?: "Point" | "LineString" | "LinearRing" | "Polygon" | "MultiPoint" | "MultiLineString" | "MultiPolygon" | "GeometryCollection" | "Circle";
+        geometryName?: string;
     }
     export class Draw extends Button {
         static DEFAULT_OPTIONS: DrawControlOptions;
@@ -276,6 +277,33 @@ declare module "ol3-draw/ol3-select" {
         static DEFAULT_OPTIONS: SelectOptions;
         static create(options?: SelectOptions): Button;
         constructor(options: SelectOptions);
+    }
+}
+declare module "ol3-draw/services/wfs-sync" {
+    import ol = require("openlayers");
+    export interface WfsSyncOptions {
+        wfsUrl: string;
+        source: ol.source.Vector;
+        featureNS: string;
+        featurePrefix: string;
+        formatter?: ol.format.WFS;
+        targets: {
+            [name: string]: string;
+        };
+        lastUpdateFieldName?: string;
+        srsName?: string;
+        sourceSrs?: string;
+        featureIdFieldName?: string;
+    }
+    export class WfsSync {
+        private options;
+        private lastSavedTime;
+        private deletes;
+        static DEFAULT_OPTIONS: WfsSyncOptions;
+        static create(options?: WfsSyncOptions): WfsSync;
+        constructor(options: WfsSyncOptions);
+        private watch();
+        private saveDrawings(args);
     }
 }
 declare module "ol3-draw/examples/ol3-draw" {

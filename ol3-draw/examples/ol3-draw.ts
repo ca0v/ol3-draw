@@ -1,4 +1,5 @@
 import ol = require("openlayers");
+import $ = require("jquery");
 
 import { cssin, mixin } from "ol3-fun/ol3-fun/common";
 import { Button } from "../ol3-button";
@@ -8,6 +9,15 @@ import { Modify } from "../ol3-edit";
 import { Translate } from "../ol3-translate";
 import { Select } from "../ol3-select";
 import { MapMaker } from "./mapmaker";
+import { WfsSync } from "../services/wfs-sync";
+
+
+const WFS_INFO = {
+    srsName: "EPSG:3857",
+    wfsUrl: "http://localhost:8080/geoserver/cite/wfs",
+    featureNS: "http://www.opengeospatial.net/cite",
+    featurePrefix: "cite",
+};
 
 function stopInteraction(map: ol.Map, type: any) {
     map.getInteractions()
@@ -32,22 +42,88 @@ function stopOtherControls(map: ol.Map, control: ol.control.Control) {
         .forEach(t => t !== control && t.set("active", false));
 }
 
+function loadAndWatch(args: {
+    map?: ol.Map;
+    featureType: string;
+    geometryType: ol.geom.GeometryType;
+    source: ol.source.Vector;
+}) {
+    let serializer = new XMLSerializer();
+
+    let format = new ol.format.WFS();
+
+    let requestBody = format.writeGetFeature({
+        featureNS: WFS_INFO.featureNS,
+        featurePrefix: WFS_INFO.featurePrefix,
+        featureTypes: [args.featureType],
+        srsName: WFS_INFO.srsName,
+        filter: ol.format.filter.equalTo("strname", "29615"),
+        // geometryName: "geom",
+        // bbox: [-9190000, 4020000, -9180000, 4030000],
+    });
+
+    let data = serializer.serializeToString(requestBody);
+
+    $.ajax({
+        type: "POST",
+        url: WFS_INFO.wfsUrl,
+        data: data,
+        contentType: "application/xml",
+        dataType: "xml",
+        success: (response: XMLDocument) => {
+            let features = format.readFeatures(response);
+            features = features.filter(f => !!f.getGeometry());
+            args.source.addFeatures(features);
+
+            if (args.map) {
+                let extent = args.map.getView().calculateExtent(args.map.getSize());
+                features.forEach(f => ol.extent.extend(extent, f.getGeometry().getExtent()));
+                args.map.getView().fit(extent, args.map.getSize());
+            }
+
+            WfsSync.create({
+                wfsUrl: WFS_INFO.wfsUrl,
+                featureNS: WFS_INFO.featureNS,
+                featurePrefix: WFS_INFO.featurePrefix,
+                srsName: WFS_INFO.srsName,
+                sourceSrs: WFS_INFO.srsName,
+                source: args.source,
+                targets: {
+                    [args.geometryType]: args.featureType
+                }
+            });
+
+        }
+    });
+}
+
 export function run() {
 
     let map = MapMaker.create({
         target: document.getElementsByClassName("map")[0],
-        projection: 'EPSG:4326',
-        center: <[number, number]>[-82.4, 34.85],
-        zoom: 15,
+        projection: WFS_INFO.srsName,
+        center: <[number, number]>[-9167000, 4148000],
+        zoom: 21,
         basemap: "osm"
     });
 
     //▲ ▬ ◇ ● ◯ ▧ ★
+
+    let pointLayer = new ol.layer.Vector({ source: new ol.source.Vector() });
+    let lineLayer = new ol.layer.Vector({ source: new ol.source.Vector() });
+    let polygonLayer = new ol.layer.Vector({ source: new ol.source.Vector() });
+
+    map.addLayer(polygonLayer);
+    map.addLayer(lineLayer);
+    map.addLayer(pointLayer);
+
     let toolbar = [
         Select.create({ map: map, label: "?", eventName: "info", boxSelectCondition: ol.events.condition.primaryAction }),
 
         Draw.create({
-            map: map, geometryType: "Polygon", label: "▧", title: "Polygon", style: [
+            map: map, geometryType: "MultiPolygon", label: "▧", title: "Polygon",
+            layers: [polygonLayer],
+            style: [
                 {
                     fill: {
                         color: "rgba(255,0,0,0.5)"
@@ -79,10 +155,17 @@ export function run() {
                 }
             ]
         }),
-        Draw.create({ map: map, geometryType: "MultiLineString", label: "▬", title: "Line" }),
+
         Draw.create({
-            map: map, geometryType: "Point", label: "●", title: "Point"
+            map: map, geometryType: "MultiLineString", label: "▬", title: "Line",
+            layers: [lineLayer]
         }),
+
+        Draw.create({
+            map: map, geometryType: "Point", label: "●", title: "Point",
+            layers: [pointLayer]
+        }),
+
         Draw.create({
             map: map, geometryType: "Point", label: "★", title: "Gradient", style: [
                 {
@@ -198,4 +281,26 @@ export function run() {
         });
 
     }
+
+    loadAndWatch({
+        map: map,
+        geometryType: "Point",
+        featureType: "addresses",
+        source: pointLayer.getSource()
+    });
+
+    loadAndWatch({
+        map: map,
+        geometryType: "MultiLineString",
+        featureType: "streets",
+        source: lineLayer.getSource()
+    });
+
+    loadAndWatch({
+        map: map,
+        geometryType: "MultiPolygon",
+        featureType: "parcels",
+        source: polygonLayer.getSource()
+    });
+
 }
