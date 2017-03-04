@@ -632,6 +632,7 @@ define("ol3-draw/ol3-button", ["require", "exports", "openlayers", "bower_compon
         Button.prototype.setMap = function (map) {
             var options = this.options;
             _super.prototype.setMap.call(this, map);
+            options.map = map;
             if (!map) {
                 this.destroy();
                 return;
@@ -877,12 +878,6 @@ define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3
                     }
                 }
             });
-            select.setActive(false);
-            map.addInteraction(select);
-            _this.handlers.push(function () {
-                select.setActive(false);
-                map.removeInteraction(select);
-            });
             var doit = function () {
                 select.getFeatures().forEach(function (f) {
                     var l = select.getLayer(f);
@@ -890,6 +885,14 @@ define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3
                 });
                 select.getFeatures().clear();
             };
+            _this.once("change:active", function () {
+                select.setActive(false);
+                map.addInteraction(select);
+                _this.handlers.push(function () {
+                    select.setActive(false);
+                    map.removeInteraction(select);
+                });
+            });
             _this.on("change:active", function () {
                 var active = _this.get("active");
                 if (!active) {
@@ -930,14 +933,16 @@ define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "bower_componen
             select.on("select", function (args) {
                 modify.setActive(true);
             });
-            [select, modify].forEach(function (i) {
-                i.setActive(false);
-                options.map.addInteraction(i);
-            });
-            _this.handlers.push(function () {
+            _this.once("change:active", function () {
                 [select, modify].forEach(function (i) {
                     i.setActive(false);
-                    options.map.removeInteraction(i);
+                    options.map.addInteraction(i);
+                });
+                _this.handlers.push(function () {
+                    [select, modify].forEach(function (i) {
+                        i.setActive(false);
+                        options.map.removeInteraction(i);
+                    });
                 });
             });
             _this.on("change:active", function () {
@@ -979,14 +984,16 @@ define("ol3-draw/ol3-translate", ["require", "exports", "openlayers", "ol3-draw/
             select.on("select", function (args) {
                 translate.setActive(true);
             });
-            [select, translate].forEach(function (i) {
-                i.setActive(false);
-                options.map.addInteraction(i);
-            });
-            _this.handlers.push(function () {
+            _this.once("change:active", function () {
                 [select, translate].forEach(function (i) {
                     i.setActive(false);
-                    options.map.removeInteraction(i);
+                    options.map.addInteraction(i);
+                });
+                _this.handlers.push(function () {
+                    [select, translate].forEach(function (i) {
+                        i.setActive(false);
+                        options.map.removeInteraction(i);
+                    });
                 });
             });
             _this.on("change:active", function () {
@@ -1020,7 +1027,6 @@ define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3
         __extends(Select, _super);
         function Select(options) {
             var _this = _super.call(this, options) || this;
-            var map = options.map;
             var selection = new ol.interaction.Select({
                 condition: ol.events.condition.click,
                 multi: options.multi,
@@ -1035,29 +1041,34 @@ define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3
             var boxSelect = new ol.interaction.DragBox({
                 condition: options.boxSelectCondition
             });
-            boxSelect.setActive(false);
-            map.addInteraction(boxSelect);
-            {
-                var boxStartCoordinate;
-                boxSelect.on("boxend", function (args) {
-                    var extent = boxSelect.getGeometry().getExtent();
-                    var features = selection.getFeatures().getArray();
-                    map.getLayers()
-                        .getArray()
-                        .filter(function (l) { return l instanceof ol.layer.Vector; })
-                        .map(function (l) { return l; })
-                        .forEach(function (l) { return l.getSource().forEachFeatureIntersectingExtent(extent, function (feature) {
-                        if (-1 === features.indexOf(feature)) {
-                            selection.getFeatures().push(feature);
-                        }
-                        else {
-                            selection.getFeatures().remove(feature);
-                        }
-                    }); });
+            boxSelect.on("boxend", function (args) {
+                var extent = boxSelect.getGeometry().getExtent();
+                var features = selection.getFeatures().getArray();
+                options.map.getLayers()
+                    .getArray()
+                    .filter(function (l) { return l instanceof ol.layer.Vector; })
+                    .map(function (l) { return l; })
+                    .forEach(function (l) { return l.getSource().forEachFeatureIntersectingExtent(extent, function (feature) {
+                    if (-1 === features.indexOf(feature)) {
+                        selection.getFeatures().push(feature);
+                    }
+                    else {
+                        selection.getFeatures().remove(feature);
+                    }
+                }); });
+            });
+            _this.once("change:active", function () {
+                [boxSelect, selection].forEach(function (i) {
+                    i.setActive(false);
+                    options.map.addInteraction(i);
                 });
-            }
-            selection.setActive(false);
-            map.addInteraction(selection);
+                _this.handlers.push(function () {
+                    [boxSelect, selection].forEach(function (i) {
+                        i.setActive(false);
+                        options.map.removeInteraction(i);
+                    });
+                });
+            });
             _this.on("change:active", function () {
                 var active = _this.get("active");
                 selection.setActive(active);
