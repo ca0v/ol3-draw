@@ -12,7 +12,7 @@ export interface DrawControlOptions extends ButtonOptions {
 }
 
 export class Draw extends Button {
-    
+
     static DEFAULT_OPTIONS: DrawControlOptions = {
         className: "ol-draw",
         geometryType: "Point",
@@ -65,11 +65,13 @@ export class Draw extends Button {
     private createInteraction() {
         let options = this.options;
         let source = options.layers[0].getSource();
+        let style = options.style.map(s => this.symbolizer.fromJson(s));
 
         let draw = new ol.interaction.Draw({
             type: options.geometryType,
             geometryName: options.geometryName,
-            source: source
+            source: source,
+            style: style
         });
 
         draw.setActive(false);

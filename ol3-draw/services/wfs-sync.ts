@@ -89,14 +89,13 @@ export class WfsSync {
     }) {
         let features = args.features.filter(f => this.lastSavedTime <= f.get(this.options.lastUpdateFieldName));
         features.forEach(f => f.set(this.options.lastUpdateFieldName, undefined));
-        console.log("saving", features.map(f => f.get(this.options.lastUpdateFieldName)));
 
         let saveTo = (featureType: string, geomType: ol.geom.GeometryType) => {
             let toSave = features.filter(f => f.getGeometry().getType() === geomType);
             let toDelete = this.deletes.filter(f => !!f.get(this.options.featureIdFieldName));
 
             if (0 === (toSave.length + toDelete.length)) {
-                console.info("nothing to save", featureType, geomType);
+                console.info("nothing to save:", featureType, geomType);
                 return;
             }
 
