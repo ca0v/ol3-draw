@@ -1646,7 +1646,6 @@ define("ol3-draw/services/wfs-sync", ["require", "exports", "openlayers", "jquer
         WfsSync.prototype.saveDrawings = function (args) {
             var _this = this;
             var features = args.features.filter(function (f) { return _this.lastSavedTime <= f.get(_this.options.lastUpdateFieldName); });
-            features.forEach(function (f) { return f.set(_this.options.lastUpdateFieldName, undefined); });
             var saveTo = function (featureType, geomType) {
                 var toSave = features.filter(function (f) { return f.getGeometry().getType() === geomType; });
                 var toDelete = _this.deletes.filter(function (f) { return !!f.get(_this.options.featureIdFieldName); });
@@ -1665,6 +1664,13 @@ define("ol3-draw/services/wfs-sync", ["require", "exports", "openlayers", "jquer
                 var format = _this.options.formatter;
                 var toInsert = toSave.filter(function (f) { return !f.get(_this.options.featureIdFieldName); });
                 var toUpdate = toSave.filter(function (f) { return !!f.get(_this.options.featureIdFieldName); });
+                if (_this.options.converter && toInsert.length) {
+                    //toInsert = toInsert.map(f => f.clone());
+                    toInsert.forEach(function (f) { return f.setGeometry(_this.options.converter(f.getGeometry())); });
+                }
+                toInsert.forEach(function (f) { return f.set(_this.options.lastUpdateFieldName, undefined); });
+                toUpdate.forEach(function (f) { return f.set(_this.options.lastUpdateFieldName, undefined); });
+                toDelete.forEach(function (f) { return f.set(_this.options.lastUpdateFieldName, undefined); });
                 var requestBody = format.writeTransaction(toInsert, toUpdate, toDelete, {
                     featureNS: _this.options.featureNS,
                     featurePrefix: _this.options.featurePrefix,
@@ -1690,6 +1696,8 @@ define("ol3-draw/services/wfs-sync", ["require", "exports", "openlayers", "jquer
                             console.log("totalUpdated: ", responseInfo.transactionSummary.totalUpdated);
                         }
                         console.assert(toInsert.length === responseInfo.transactionSummary.totalInserted, "number inserted should equal number of new keys");
+                        if (_this.options.converter) {
+                        }
                         toInsert.forEach(function (f, i) {
                             var id = responseInfo.insertIds[i];
                             // how to know to use "gid"?
@@ -1775,7 +1783,8 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "jquer
                     source: args.source,
                     targets: (_a = {},
                         _a[args.geometryType] = args.featureType,
-                        _a)
+                        _a),
+                    converter: args.converter
                 });
                 var _a;
             }
@@ -1820,7 +1829,9 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "jquer
                 ]
             }),
             ol3_draw_1.Draw.create({
-                map: map, geometryType: "Circle", label: "◯", title: "Circle", style: [
+                map: map, geometryType: "Circle", label: "◯", title: "Circle",
+                layers: [polygonLayer],
+                style: [
                     {
                         fill: {
                             color: "rgba(255,0,0,0.5)"
@@ -1952,6 +1963,16 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "jquer
             geometryType: "MultiPolygon",
             featureType: "parcels",
             source: polygonLayer.getSource()
+        });
+        loadAndWatch({
+            map: map,
+            geometryType: "Circle",
+            featureType: "parcels",
+            source: polygonLayer.getSource(),
+            converter: function (geom) {
+                var poly = ol.geom.Polygon.fromCircle(geom, 8);
+                return new ol.geom.MultiPolygon([poly.getCoordinates()]);
+            }
         });
     }
     exports.run = run;
