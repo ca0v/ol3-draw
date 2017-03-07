@@ -6,12 +6,15 @@ declare module "bower_components/ol3-fun/ol3-fun/common" {
     export function mixin<A extends any, B extends any>(a: A, b: B): A & B;
     export function defaults<A extends any, B extends any>(a: A, ...b: B[]): A & B;
     export function cssin(name: string, css: string): () => void;
-    export function debounce(func: () => void, wait?: number): () => void;
+    export function debounce<T extends Function>(func: T, wait?: number, immediate?: boolean): T;
     /**
      * poor $(html) substitute due to being
      * unable to create <td>, <tr> elements
      */
     export function html(html: string): HTMLElement;
+    export function pair<A, B>(a1: A[], a2: B[]): [A, B][];
+    export function range(n: number): any[];
+    export function shuffle<T>(array: T[]): T[];
 }
 declare module "bower_components/ol3-symbolizer/ol3-symbolizer/format/base" {
     /**
@@ -32,6 +35,10 @@ declare module "bower_components/ol3-symbolizer/ol3-symbolizer/format/ol3-symbol
         type LineDash = number[];
         interface Fill {
             color?: string;
+            gradient?: {
+                type?: string;
+                stops?: string;
+            };
         }
         interface Stroke {
             color?: string;
@@ -230,31 +237,56 @@ declare module "ol3-draw/examples/mapmaker" {
         }): ol.Map;
     }
 }
+declare module "ol3-draw/examples/multicurve" {
+    import ol = require("openlayers");
+    export module PostGIS {
+        function distance(p1: ol.Coordinate, p2: ol.Coordinate): number;
+        function length(points: ol.Coordinate[]): number;
+    }
+    export function run(): void;
+}
 declare module "ol3-draw/ol3-delete" {
+    import ol = require("openlayers");
     import { Button, ButtonOptions as IButtonOptions } from "ol3-draw/ol3-button";
+    import { Format } from "bower_components/ol3-symbolizer/index";
     export interface DeleteControlOptions extends IButtonOptions {
+        multi?: boolean;
+        style?: {
+            [name: string]: Format.Style[];
+        };
+        boxSelectCondition?: (mapBrowserEvent: ol.MapBrowserEvent) => boolean;
     }
     export class Delete extends Button {
         static DEFAULT_OPTIONS: DeleteControlOptions;
         options: DeleteControlOptions;
         static create(options?: DeleteControlOptions): Button;
+        private featureLayerAssociation_;
+        private addFeatureLayerAssociation(feature, layer);
         constructor(options: DeleteControlOptions);
     }
 }
 declare module "ol3-draw/ol3-edit" {
     import { Button, ButtonOptions as IButtonOptions } from "ol3-draw/ol3-button";
-    export interface EditControlOptions extends IButtonOptions {
+    import { Format } from "bower_components/ol3-symbolizer/index";
+    export interface ModifyControlOptions extends IButtonOptions {
+        style?: {
+            [name: string]: Format.Style[];
+        };
     }
     export class Modify extends Button {
-        static DEFAULT_OPTIONS: EditControlOptions;
-        static create(options?: EditControlOptions): Button;
-        options: EditControlOptions;
-        constructor(options: EditControlOptions);
+        static DEFAULT_OPTIONS: ModifyControlOptions;
+        static create(options?: ModifyControlOptions): Button;
+        options: ModifyControlOptions;
+        constructor(options: ModifyControlOptions);
     }
 }
 declare module "ol3-draw/ol3-translate" {
     import { Button, ButtonOptions as IButtonOptions } from "ol3-draw/ol3-button";
+    import { Format } from "bower_components/ol3-symbolizer/index";
     export interface TranslateControlOptions extends IButtonOptions {
+        style?: {
+            [name: string]: Format.Style[];
+        };
     }
     export class Translate extends Button {
         static DEFAULT_OPTIONS: TranslateControlOptions;
