@@ -47,6 +47,7 @@ function loadAndWatch(args: {
   featureType: string;
   geometryType: ol.geom.GeometryType;
   source: ol.source.Vector;
+  converter?: (geom: ol.geom.Geometry) => ol.geom.Geometry;
 }) {
   let serializer = new XMLSerializer();
 
@@ -90,7 +91,8 @@ function loadAndWatch(args: {
         source: args.source,
         targets: {
           [args.geometryType]: args.featureType
-        }
+        },
+        converter: args.converter
       });
 
     }
@@ -143,7 +145,9 @@ export function run() {
       ]
     }),
     Draw.create({
-      map: map, geometryType: "Circle", label: "◯", title: "Circle", style: [
+      map: map, geometryType: "Circle", label: "◯", title: "Circle",
+      layers: [polygonLayer],
+      style: [
         {
           fill: {
             color: "rgba(255,0,0,0.5)"
@@ -301,6 +305,17 @@ export function run() {
     geometryType: "MultiPolygon",
     featureType: "parcels",
     source: polygonLayer.getSource()
+  });
+
+  loadAndWatch({
+    map: map,
+    geometryType: "Circle",
+    featureType: "parcels",
+    source: polygonLayer.getSource(),
+    converter: (geom: ol.geom.Circle) => {
+      let poly = ol.geom.Polygon.fromCircle(geom, 8);
+      return new ol.geom.MultiPolygon([poly.getCoordinates()]);
+    }
   });
 
 }
