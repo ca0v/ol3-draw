@@ -326,6 +326,7 @@ declare module "ol3-draw/services/wfs-sync" {
         srsName?: string;
         sourceSrs?: string;
         featureIdFieldName?: string;
+        converter?: (geom: ol.geom.Geometry) => ol.geom.Geometry;
     }
     export class WfsSync {
         private options;
