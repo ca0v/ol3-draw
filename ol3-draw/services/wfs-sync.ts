@@ -73,7 +73,6 @@ export class WfsSync {
     source.forEachFeature(f => watch(f));
 
     source.on("addfeature", (args: ol.source.VectorEvent) => {
-      args.feature.set("strname", "29615");
       watch(args.feature);
       touch(args.feature);
     });
