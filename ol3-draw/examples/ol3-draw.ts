@@ -8,9 +8,12 @@ import { Draw } from "../ol3-draw";
 import { Modify } from "../ol3-edit";
 import { Translate } from "../ol3-translate";
 import { Select } from "../ol3-select";
+import { Note } from "../ol3-note";
 import { MapMaker } from "./mapmaker";
 import { WfsSync } from "../services/wfs-sync";
 
+
+const GROUP_NAME = "ol3-draw-examples";
 
 const WFS_INFO = {
   srsName: "EPSG:3857",
@@ -58,7 +61,7 @@ function loadAndWatch(args: {
     featurePrefix: WFS_INFO.featurePrefix,
     featureTypes: [args.featureType],
     srsName: WFS_INFO.srsName,
-    filter: ol.format.filter.equalTo("strname", "29615"),
+    filter: ol.format.filter.equalTo("strname", GROUP_NAME),
     // geometryName: "geom",
     // bbox: [-9190000, 4020000, -9180000, 4030000],
   });
@@ -115,9 +118,12 @@ export function run() {
   let lineLayer = new ol.layer.Vector({ source: new ol.source.Vector() });
   let polygonLayer = new ol.layer.Vector({ source: new ol.source.Vector() });
 
-  map.addLayer(polygonLayer);
-  map.addLayer(lineLayer);
-  map.addLayer(pointLayer);
+  [polygonLayer, lineLayer, pointLayer].forEach(l => {
+    map.addLayer(l);
+    l.getSource().on("addfeature", (args: ol.source.VectorEvent) => {
+      args.feature.set("strname", GROUP_NAME);
+    });
+  });
 
   let toolbar = [
     Select.create({ map: map, label: "?", eventName: "info", boxSelectCondition: ol.events.condition.primaryAction }),
@@ -202,8 +208,14 @@ export function run() {
 
     Button.create({ map: map, label: "💾", eventName: "save", title: "Save" }),
     Button.create({ map: map, label: "X", eventName: "exit", title: "Exit" }),
+
   ];
+
   toolbar.forEach((t, i) => t.setPosition(`left top${-i * 2 || ''}`));
+
+  Note.create({
+    map: map, position: "left-2 top", layer: pointLayer, noteFieldName: "url"
+  });
 
   {
 
