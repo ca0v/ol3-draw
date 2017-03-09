@@ -3,7 +3,7 @@ export function run() {
     let path = `${l.origin}${l.pathname}?run=ol3-draw/examples/`;
     let labs = `
     index
-    ol3-draw
+    ol3-draw&GROUP_NAME=ol3-draw-examples
     `;
 
     let styles = document.createElement("style");

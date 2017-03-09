@@ -1,7 +1,7 @@
 import ol = require("openlayers");
 import $ = require("jquery");
 
-import { cssin, mixin } from "ol3-fun/ol3-fun/common";
+import { cssin, mixin, getParameterByName } from "ol3-fun/ol3-fun/common";
 import { Button } from "../ol3-button";
 import { Delete } from "../ol3-delete";
 import { Draw } from "../ol3-draw";
@@ -13,11 +13,11 @@ import { MapMaker } from "./mapmaker";
 import { WfsSync } from "../services/wfs-sync";
 
 
-const GROUP_NAME = "ol3-draw-examples";
+const GROUP_NAME = getParameterByName("GROUP_NAME") || "ol3-draw-examples";
 
 const WFS_INFO = {
   srsName: "EPSG:3857",
-  wfsUrl: "http://localhost:8080/geoserver/cite/wfs",
+  wfsUrl: `${location.protocol}//${location.hostname}:8080/geoserver/cite/wfs`,
   featureNS: "http://www.opengeospatial.net/cite",
   featurePrefix: "cite",
 };
@@ -288,10 +288,14 @@ export function run() {
         stopControl(map, Translate);
         stopControl(map, Select);
 
-        map.getControls()
-          .getArray()
-          .filter(i => i instanceof Draw)
-          .forEach(t => (<Draw>t).options.layers.forEach(l => l.getSource().clear()));
+        if (prompt("Are you sure you want to delete ALL the features?", "No!")) {
+          console.log("Too dangerous, sorry");
+          return false;
+          map.getControls()
+            .getArray()
+            .filter(i => i instanceof Draw)
+            .forEach(t => (<Draw>t).options.layers.forEach(l => l.getSource().clear()));
+        };
 
       }
     });
