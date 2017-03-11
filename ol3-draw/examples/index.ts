@@ -3,6 +3,7 @@ export function run() {
     let path = `${l.origin}${l.pathname}?run=ol3-draw/examples/`;
     let labs = `
     index
+    measure
     ol3-draw&GROUP_NAME=ol3-draw-examples
     ol3-history
     `;

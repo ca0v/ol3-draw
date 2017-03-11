@@ -76,6 +76,10 @@ export class Draw extends Button {
 
     draw.setActive(false);
 
+    ["drawstart"].forEach(eventName => {
+      draw.on(eventName, args => this.dispatchEvent(args));
+    });
+
     draw.on("change:active", () =>
       this.options.element.classList.toggle("active", draw.getActive()));
 
