@@ -13,7 +13,10 @@ export function run() {
         basemap: "osm"
     });
 
-    NavHistory.create({ map: map });
+    NavHistory.create({
+        map: map,
+        delay: 500
+    });
 
     Button.create({ map: map, label: "<<", eventName: "nav:back", title: "Back", position: "left-2 top" });
     Button.create({ map: map, label: ">>", eventName: "nav:forward", title: "Forward", position: "left-4 top" });

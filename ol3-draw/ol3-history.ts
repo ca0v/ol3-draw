@@ -1,19 +1,23 @@
 import ol = require("openlayers");
-import { debounce } from "ol3-fun/ol3-fun/common";
+import { debounce, defaults } from "ol3-fun/ol3-fun/common";
 
 export interface NavHistoryOptions {
     map?: ol.Map;
+    delay?: number;
 }
 
 export class NavHistory {
 
-    static create(options: NavHistoryOptions) {
-
-        return new NavHistory(options);
-
+    static DEFAULT_OPTIONS: NavHistoryOptions = {
+        delay: 2000
     }
 
-    private constructor(options: NavHistoryOptions) {
+    static create(options: NavHistoryOptions) {
+        options = defaults({}, options || {}, NavHistory.DEFAULT_OPTIONS);
+        return new NavHistory(options);
+    }
+
+    private constructor(public options: NavHistoryOptions) {
         let map = options.map;
 
         let history = <Array<{
@@ -21,44 +25,52 @@ export class NavHistory {
             center: ol.Coordinate;
         }>>[];
 
+        let history_index = 0;
+
         let push = () => {
-            let count = history.push({
+            history_index = history.push({
                 zoom: map.getView().getZoom(),
                 center: map.getView().getCenter()
             });
-            console.log(count);
-            return count;
-        }
-
-        let pop = () => {
-            if (history.length) {
-                return history.pop();
-            }
-        };
-
-        let goto = () => {
-            if (!history_index) return;
-            stopListening();
-            let extent = history[history_index - 1];
-            map.getView().animate({ zoom: extent.zoom, center: extent.center }, debounce(() => stopListening = startListening()));
+            console.log("push", history_index);
         }
 
         // capture current extent
-        let history_index = push();
+        push();
 
-        // every time extent changes, capture new extent
-        let startListening = () => {
-            let h = map.getView().on(["change:center", "change:resolution"], debounce((args: ol.MapEvent) => {
-                // wipe out everything forward (if anything)
-                while (history.length > history_index) history.pop();
-                // before capturing new extent
-                history_index = push();
-            }, 2000));
-            return () => ol.Observable.unByKey(h);
+        let stopped = false;
+
+        let resume = debounce(() => {
+            stopped = false;
+            console.log("allow capture");
+        }, this.options.delay);
+
+        let goto = () => {
+            stopped = true;
+            console.log("suspend capture");
+            console.log("goto", history_index);
+            let extent = history[history_index - 1];
+            map.getView().animate({
+                zoom: extent.zoom,
+                center: extent.center,
+                duration: this.options.delay / 10
+            }, resume);
         }
 
+        let capture = debounce(() => {
+            if (stopped) {
+                console.log("capture suspended");
+                return;
+            }
+            // wipe out everything forward (if anything)
+            while (history.length > history_index) history.pop();
+            push();
+        }, this.options.delay);
+
+        map.getView().on(["change:center", "change:resolution"], () => capture());
+
         map.on("nav:back", () => {
-            if (!history_index) {
+            if (history_index <= 1) {
                 console.warn("nothing to navigate back to");
                 return;
             }
@@ -68,14 +80,12 @@ export class NavHistory {
 
         map.on("nav:forward", () => {
             if (history_index >= history.length) {
-                console.warn("nothing to navigate foward to");
+                console.warn("nothing to navigate forward to");
                 return;
             }
             history_index++;
             goto();
         });
-
-        let stopListening = startListening();
 
     }
 
