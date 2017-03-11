@@ -5,6 +5,20 @@ declare module "bower_components/ol3-fun/ol3-fun/common" {
     export function doif<T>(v: T, cb: (v: T) => void): void;
     export function mixin<A extends any, B extends any>(a: A, b: B): A & B;
     export function defaults<A extends any, B extends any>(a: A, ...b: B[]): A & B;
+    /**
+     * Adds exactly one instance of the CSS to the app with a mechanism
+     * for disposing by invoking the destructor returned by this method.
+     * Note the css will not be removed until the dependency count reaches
+     * 0 meaning the number of calls to cssin('id') must match the number
+     * of times the destructor is invoked.
+     * let d1 = cssin('foo', '.foo { background: white }');
+     * let d2 = cssin('foo', '.foo { background: white }');
+     * d1(); // reduce dependency count
+     * d2(); // really remove the css
+     * @param name unique id for this style tag
+     * @param css css content
+     * @returns destructor
+     */
     export function cssin(name: string, css: string): () => void;
     export function debounce<T extends Function>(func: T, wait?: number, immediate?: boolean): T;
     /**
@@ -237,12 +251,59 @@ declare module "ol3-draw/examples/mapmaker" {
         }): ol.Map;
     }
 }
-declare module "ol3-draw/examples/multicurve" {
+declare module "bower_components/ol3-fun/ol3-fun/navigation" {
     import ol = require("openlayers");
-    export module PostGIS {
-        function distance(p1: ol.Coordinate, p2: ol.Coordinate): number;
-        function length(points: ol.Coordinate[]): number;
+    /**
+     * A less disorienting way of changing the maps extent (maybe!)
+     * Zoom out until new feature is visible
+     * Zoom to that feature
+     */
+    export function zoomToFeature(map: ol.Map, feature: ol.Feature, options?: {
+        duration?: number;
+        padding?: number;
+        minResolution?: number;
+    }): void;
+}
+declare module "bower_components/ol3-fun/ol3-fun/parse-dms" {
+    export function parse(dmsString: string): number | {
+        [x: number]: number;
+    };
+}
+declare module "bower_components/ol3-fun/index" {
+    import common = require("bower_components/ol3-fun/ol3-fun/common");
+    import navigation = require("bower_components/ol3-fun/ol3-fun/navigation");
+    import dms = require("bower_components/ol3-fun/ol3-fun/parse-dms");
+    let index: typeof common & {
+        dms: typeof dms;
+        navigation: typeof navigation;
+    };
+    export = index;
+}
+declare module "ol3-draw/measure-extension" {
+    import ol = require("openlayers");
+    export interface MeasurementOptions {
+        map?: ol.Map;
+        draw?: ol.Object;
+        uom?: string;
+        measureCurrentSegment?: boolean;
     }
+    export class Measurement {
+        options: MeasurementOptions;
+        static DEFAULT_OPTIONS: MeasurementOptions;
+        private measureTooltipElement;
+        private measureTooltip;
+        static create(options?: MeasurementOptions): Measurement;
+        private constructor(options);
+        private createMeasureTooltip();
+        /**
+         * Format length output.
+         * @param {ol.geom.LineString} line The line.
+         * @return {string} The formatted length.
+         */
+        private formatLength(args);
+    }
+}
+declare module "ol3-draw/examples/measure" {
     export function run(): void;
 }
 declare module "ol3-draw/ol3-delete" {
@@ -311,6 +372,32 @@ declare module "ol3-draw/ol3-select" {
         constructor(options: SelectOptions);
     }
 }
+declare module "ol3-draw/ol3-note" {
+    import ol = require("openlayers");
+    import { Button, ButtonOptions } from "ol3-draw/ol3-button";
+    import { Format } from "bower_components/ol3-symbolizer/index";
+    /**
+     * Draws a point that renders as a ol.overlay at a certain zoom level
+     * with a textarea allow user to enter notes
+     * Click "Add Note" then click the map.  Done.
+     */
+    export interface NoteControlOptions extends ButtonOptions {
+        geometryName?: string;
+        layer?: ol.layer.Vector;
+        noteFieldName?: string;
+        style?: Format.Style[];
+    }
+    export class Note extends Button {
+        static DEFAULT_OPTIONS: NoteControlOptions;
+        static create(options?: NoteControlOptions): Button;
+        options: NoteControlOptions;
+        private overlayMap;
+        constructor(options: NoteControlOptions);
+        private forceOverlay(feature);
+        private createOverlay(feature);
+        cssin(): void;
+    }
+}
 declare module "ol3-draw/services/wfs-sync" {
     import ol = require("openlayers");
     export interface WfsSyncOptions {
@@ -340,5 +427,21 @@ declare module "ol3-draw/services/wfs-sync" {
     }
 }
 declare module "ol3-draw/examples/ol3-draw" {
+    export function run(): void;
+}
+declare module "ol3-draw/ol3-history" {
+    import ol = require("openlayers");
+    export interface NavHistoryOptions {
+        map?: ol.Map;
+        delay?: number;
+    }
+    export class NavHistory {
+        options: NavHistoryOptions;
+        static DEFAULT_OPTIONS: NavHistoryOptions;
+        static create(options: NavHistoryOptions): NavHistory;
+        private constructor(options);
+    }
+}
+declare module "ol3-draw/examples/ol3-history" {
     export function run(): void;
 }

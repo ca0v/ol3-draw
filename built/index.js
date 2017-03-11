@@ -62,13 +62,28 @@ define("bower_components/ol3-fun/ol3-fun/common", ["require", "exports"], functi
         return a;
     }
     exports.defaults = defaults;
+    /**
+     * Adds exactly one instance of the CSS to the app with a mechanism
+     * for disposing by invoking the destructor returned by this method.
+     * Note the css will not be removed until the dependency count reaches
+     * 0 meaning the number of calls to cssin('id') must match the number
+     * of times the destructor is invoked.
+     * let d1 = cssin('foo', '.foo { background: white }');
+     * let d2 = cssin('foo', '.foo { background: white }');
+     * d1(); // reduce dependency count
+     * d2(); // really remove the css
+     * @param name unique id for this style tag
+     * @param css css content
+     * @returns destructor
+     */
     function cssin(name, css) {
         var id = "style-" + name;
         var styleTag = document.getElementById(id);
         if (!styleTag) {
             styleTag = document.createElement("style");
             styleTag.id = id;
-            styleTag.innerText = css;
+            styleTag.type = "text/css";
+            styleTag.appendChild(document.createTextNode(css));
             document.head.appendChild(styleTag);
         }
         var dataset = styleTag.dataset;
@@ -266,7 +281,7 @@ define("bower_components/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer", [
                 if (style.fill)
                     this.assign(s, "fill", style.fill);
                 if (style.scale)
-                    this.assign(s, "scale", style.scale); // getScale and getImgSize are modified in deserializer
+                    this.assign(s, "scale", style.scale); // getScale and getImgSize are modified in deserializer               
                 if (style.imgSize)
                     this.assign(s, "imgSize", style.imgSize);
             }
@@ -274,7 +289,7 @@ define("bower_components/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer", [
             if (style.getSrc)
                 this.assign(s, "src", style.getSrc());
             if (s.points && s.radius !== s.radius2)
-                s.points /= 2; // ol3 defect doubles point count when r1 <> r2
+                s.points /= 2; // ol3 defect doubles point count when r1 <> r2  
             return s;
         };
         StyleConverter.prototype.serializeColor = function (color) {
@@ -609,17 +624,6 @@ define("bower_components/ol3-symbolizer/index", ["require", "exports", "bower_co
 });
 define("ol3-draw/ol3-button", ["require", "exports", "openlayers", "bower_components/ol3-fun/ol3-fun/common", "bower_components/ol3-symbolizer/index"], function (require, exports, ol, common_1, ol3_symbolizer_1) {
     "use strict";
-    function range(n) {
-        var result = new Array(n);
-        for (var i = 0; i < n; i++)
-            result[i] = i;
-        return result;
-    }
-    function pair(a1, a2) {
-        var result = [];
-        a1.forEach(function (v1) { return a2.forEach(function (v2) { return result.push([v1, v2]); }); });
-        return result;
-    }
     var Button = (function (_super) {
         __extends(Button, _super);
         function Button(options) {
@@ -670,7 +674,7 @@ define("ol3-draw/ol3-button", ["require", "exports", "openlayers", "bower_compon
         };
         Button.prototype.cssin = function () {
             var className = this.options.className;
-            var positions = pair("top left right bottom".split(" "), range(24))
+            var positions = common_1.pair("top left right bottom".split(" "), common_1.range(24))
                 .map(function (pos) { return "." + className + "." + (pos[0] + (-pos[1] || '')) + " { " + pos[0] + ":" + (0.5 + pos[1]) + "em; }"; });
             this.handlers.push(common_1.cssin(className, "\n            ." + className + " {\n                position: absolute;\n                background-color: rgba(255,255,255,.4);\n            }\n            ." + className + ".active {\n                background-color: white;\n            }\n            ." + className + ":hover {\n                background-color: white;\n            }\n            ." + className + " input[type=\"button\"] {\n                color: rgba(0,60,136,1);\n                background: transparent;\n                border: none;\n                width: 2em;\n                height: 2em;\n            }\n            " + positions.join('\n') + "\n        "));
         };
@@ -747,6 +751,9 @@ define("ol3-draw/ol3-draw", ["require", "exports", "openlayers", "ol3-draw/ol3-b
                 style: style
             });
             draw.setActive(false);
+            ["drawstart", "drawend"].forEach(function (eventName) {
+                draw.on(eventName, function (args) { return _this.dispatchEvent(args); });
+            });
             draw.on("change:active", function () {
                 return _this.options.element.classList.toggle("active", draw.getActive());
             });
@@ -805,7 +812,7 @@ define("ol3-draw/examples/index", ["require", "exports"], function (require, exp
     function run() {
         var l = window.location;
         var path = "" + l.origin + l.pathname + "?run=ol3-draw/examples/";
-        var labs = "\n    index\n    ol3-draw\n    ";
+        var labs = "\n    index\n    measure\n    ol3-draw&GROUP_NAME=ol3-draw-examples\n    ol3-history\n    ";
         var styles = document.createElement("style");
         document.head.appendChild(styles);
         styles.innerText += "\n    #map {\n        display: none;\n    }\n    .test {\n        margin: 20px;\n    }\n    ";
@@ -859,163 +866,243 @@ define("ol3-draw/examples/mapmaker", ["require", "exports", "openlayers", "bower
     MapMaker.DEFAULT_OPTIONS = {};
     exports.MapMaker = MapMaker;
 });
-define("ol3-draw/examples/multicurve", ["require", "exports", "openlayers", "bower_components/ol3-symbolizer/index", "../mapmaker"], function (require, exports, ol, ol3_symbolizer_2, mapmaker_1) {
+define("bower_components/ol3-fun/ol3-fun/navigation", ["require", "exports", "openlayers", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, common_4) {
     "use strict";
-    var converter = new ol3_symbolizer_2.StyleConverter();
-    var PostGIS;
-    (function (PostGIS) {
-        function distance(p1, p2) {
-            var diff = p1.map(function (v, i) { return p2[i] - v; }).map(function (v) { return v * v; }).reduce(function (a, b) { return a + b; });
-            return Math.sqrt(diff);
-        }
-        PostGIS.distance = distance;
-        // port of ptarray_length_2d
-        function length(points) {
-            var dist = 0;
-            for (var i = 1; i < points.length; i++) {
-                var p0 = points[i - 1];
-                var p1 = points[i];
-                dist += distance(p0, p1);
-            }
-            return dist;
-        }
-        PostGIS.length = length;
-    })(PostGIS = exports.PostGIS || (exports.PostGIS = {}));
     /**
-     * Given a linear feature return equidistant point features that overlay the segment
+     * A less disorienting way of changing the maps extent (maybe!)
+     * Zoom out until new feature is visible
+     * Zoom to that feature
      */
-    var LineSegmentRenderer = (function () {
-        function LineSegmentRenderer() {
+    function zoomToFeature(map, feature, options) {
+        options = common_4.defaults(options || {}, {
+            duration: 1000,
+            padding: 256,
+            minResolution: 2 * map.getView().getMinResolution()
+        });
+        var view = map.getView();
+        var currentExtent = view.calculateExtent(map.getSize());
+        var targetExtent = feature.getGeometry().getExtent();
+        var doit = function (duration) {
+            view.fit(targetExtent, {
+                size: map.getSize(),
+                padding: [options.padding, options.padding, options.padding, options.padding],
+                minResolution: options.minResolution,
+                duration: duration
+            });
+        };
+        if (ol.extent.containsExtent(currentExtent, targetExtent)) {
+            // new extent is contained within current extent, pan and zoom in
+            doit(options.duration);
         }
-        /**
-         * Returns a point interpolated along a line.
-         * @param geom the line
-         * @param interval between 0 and 1 representing fraction of total length of linestring the point has to be located
-         */
-        LineSegmentRenderer.prototype.interpolate = function (geom, interval) {
-            return [0, 0];
-        };
-        /**
-         * Return a linestring being a substring of the input one starting and ending
-         * at the given fractions of total 2d length.
-         * Second and third arguments are float8 values between 0 and 1.
-         * @param geom
-         * @param intervals
-         */
-        LineSegmentRenderer.prototype.substring = function (geom, intervals) {
-            return geom;
-        };
-        /**
-         * Returns a float between 0 and 1 representing the location of the closest point on LineString to the given Point
-         * @param geom
-         * @param point
-         */
-        LineSegmentRenderer.prototype.locate = function (geom, point) {
-            return 0;
-        };
-        /**
-         * ST_AddMeasure
-         * Return a derived geometry with measure elements linearly interpolated between the start and end points.
-         * If the geometry has no measure dimension, one is added.
-         * If the geometry has a measure dimension, it is over-written with new values.
-         * Only LINESTRINGS and MULTILINESTRINGS are supported.
-         *
-         * port of (lwline_measured_from_lwline)[https://github.com/imincik/pkg-postgis/blob/3a073ebd06384fc6ae330245c80bece2cb2a79cf/liblwgeom/lwline.c]
-         * Re-write the measure ordinate (or add one, if it isn't already there) interpolating
-         * the measure between the supplied start and end values.
-         *
-         * @param geom the linestring
-         * @param intervals [start, end] both between 0 and 1
-         */
-        LineSegmentRenderer.prototype.addMeasure = function (geom, start, end) {
-            if (start === void 0) { start = 0; }
-            if (end === void 0) { end = 1; }
-            var length_so_far = 0;
-            var range = end - start;
-            var points = geom.getCoordinates();
-            var length = PostGIS.length(points);
-            var measures = [0];
-            for (var i = 1; i < points.length; i++) {
-                var p1 = points[i - 1];
-                var p2 = points[i];
-                length_so_far += PostGIS.distance(p1, p2);
-                var m = (length > 0) ? start + range * length_so_far / length : 0;
-                measures.push(m);
-            }
-            return measures;
-        };
-        /**
-         * lwgeom_functions_lrs.c
-         * lwline_locate_between_m
-         * Return a fully allocated LWGEOM containing elements
-         * intersected/interpolated with the given M range.
-         * Return NULL if none of the elements fall in the range.
-         */
-        LineSegmentRenderer.prototype.locateBetween = function (geom, start, end) {
-            if (start === void 0) { start = 0; }
-            if (end === void 0) { end = 0; }
-        };
-        /**
-         * Generates multi-point feature with points equally spaced along the line
-         * @param geom
-         * @param interval
-         */
-        LineSegmentRenderer.prototype.convert = function (geom, interval) {
-        };
-        return LineSegmentRenderer;
-    }());
-    var center = [-82.4, 34.85];
-    function randomize(p, scale) {
-        if (scale === void 0) { scale = 0.1; }
-        return p.map(function (v) { return v + scale * (0.5 - Math.random()); });
+        else if (ol.extent.containsExtent(currentExtent, targetExtent)) {
+            // new extent is contained within current extent, pan and zoom out
+            doit(options.duration);
+        }
+        else {
+            // zoom out until target extent is in view
+            var fullExtent = ol.extent.createEmpty();
+            ol.extent.extend(fullExtent, currentExtent);
+            ol.extent.extend(fullExtent, targetExtent);
+            var dscale = ol.extent.getWidth(fullExtent) / ol.extent.getWidth(currentExtent);
+            var duration = 0.5 * options.duration;
+            view.fit(fullExtent, {
+                size: map.getSize(),
+                padding: [options.padding, options.padding, options.padding, options.padding],
+                minResolution: options.minResolution,
+                duration: duration
+            });
+            setTimeout(function () { return doit(0.5 * options.duration); }, duration);
+        }
     }
+    exports.zoomToFeature = zoomToFeature;
+});
+// ported from https://github.com/gmaclennan/parse-dms/blob/master/index.js
+define("bower_components/ol3-fun/ol3-fun/parse-dms", ["require", "exports"], function (require, exports) {
+    "use strict";
+    function decDegFromMatch(m) {
+        var signIndex = {
+            "-": -1,
+            "N": 1,
+            "S": -1,
+            "E": 1,
+            "W": -1
+        };
+        var latLonIndex = {
+            "-": "",
+            "N": "lat",
+            "S": "lat",
+            "E": "lon",
+            "W": "lon"
+        };
+        var degrees, minutes, seconds, sign, latLon;
+        sign = signIndex[m[2]] || signIndex[m[1]] || signIndex[m[6]] || 1;
+        degrees = Number(m[3]);
+        minutes = m[4] ? Number(m[4]) : 0;
+        seconds = m[5] ? Number(m[5]) : 0;
+        latLon = latLonIndex[m[1]] || latLonIndex[m[6]];
+        if (!inRange(degrees, 0, 180))
+            throw 'Degrees out of range';
+        if (!inRange(minutes, 0, 60))
+            throw 'Minutes out of range';
+        if (!inRange(seconds, 0, 60))
+            throw 'Seconds out of range';
+        return {
+            decDeg: sign * (degrees + minutes / 60 + seconds / 3600),
+            latLon: latLon
+        };
+    }
+    function inRange(value, a, b) {
+        return value >= a && value <= b;
+    }
+    function parse(dmsString) {
+        dmsString = dmsString.trim();
+        // Inspired by https://gist.github.com/JeffJacobson/2955437
+        // See https://regex101.com/r/kS2zR1/3
+        var dmsRe = /([NSEW])?(-)?(\d+(?:\.\d+)?)[°º:d\s]?\s?(?:(\d+(?:\.\d+)?)['’‘′:]\s?(?:(\d{1,2}(?:\.\d+)?)(?:"|″|’’|'')?)?)?\s?([NSEW])?/i;
+        var dmsString2;
+        var m1 = dmsString.match(dmsRe);
+        if (!m1)
+            throw 'Could not parse string';
+        // If dmsString starts with a hemisphere letter, then the regex can also capture the 
+        // hemisphere letter for the second coordinate pair if also in the string
+        if (m1[1]) {
+            m1[6] = undefined;
+            dmsString2 = dmsString.substr(m1[0].length - 1).trim();
+        }
+        else {
+            dmsString2 = dmsString.substr(m1[0].length).trim();
+        }
+        var decDeg1 = decDegFromMatch(m1);
+        var m2 = dmsString2.match(dmsRe);
+        var decDeg2 = m2 && decDegFromMatch(m2);
+        if (typeof decDeg1.latLon === 'undefined') {
+            if (!isNaN(decDeg1.decDeg) && decDeg2 && isNaN(decDeg2.decDeg)) {
+                // If we only have one coordinate but we have no hemisphere value,
+                // just return the decDeg number
+                return decDeg1.decDeg;
+            }
+            else if (!isNaN(decDeg1.decDeg) && decDeg2 && !isNaN(decDeg2.decDeg)) {
+                // If no hemisphere letter but we have two coordinates,
+                // infer that the first is lat, the second lon
+                decDeg1.latLon = 'lat';
+                decDeg2.latLon = 'lon';
+            }
+            else {
+                throw 'Could not parse string';
+            }
+        }
+        // If we parsed the first coordinate as lat or lon, then assume the second is the other
+        if (typeof decDeg2.latLon === 'undefined') {
+            decDeg2.latLon = decDeg1.latLon === 'lat' ? 'lon' : 'lat';
+        }
+        return _a = {},
+            _a[decDeg1.latLon] = decDeg1.decDeg,
+            _a[decDeg2.latLon] = decDeg2.decDeg,
+            _a;
+        var _a;
+    }
+    exports.parse = parse;
+});
+define("bower_components/ol3-fun/index", ["require", "exports", "bower_components/ol3-fun/ol3-fun/common", "bower_components/ol3-fun/ol3-fun/navigation", "bower_components/ol3-fun/ol3-fun/parse-dms"], function (require, exports, common, navigation, dms) {
+    "use strict";
+    var index = common.defaults(common, {
+        dms: dms,
+        navigation: navigation
+    });
+    return index;
+});
+define("ol3-draw/measure-extension", ["require", "exports", "openlayers", "bower_components/ol3-fun/index"], function (require, exports, ol, ol3_fun_1) {
+    "use strict";
+    var wgs84Sphere = new ol.Sphere(6378137);
+    var MeterConvert = {
+        "m": 1,
+        "km": 1 / 1000,
+        "ft": 3.28084,
+        "mi": 0.000621371
+    };
+    var Measurement = (function () {
+        function Measurement(options) {
+            this.options = options;
+            ol3_fun_1.cssin("measure", "\n\n.tooltip {\n    position: relative;\n    background: rgba(0, 0, 0, 0.5);\n    border-radius: 4px;\n    color: white;\n    padding: 4px 8px;\n    opacity: 0.7;\n    white-space: nowrap;\n}\n.tooltip-measure {\n    opacity: 1;\n    font-weight: bold;\n}\n.tooltip-static {\n    background-color: #ffcc33;\n    color: black;\n    border: 1px solid white;\n}\n.tooltip-measure:before,\n.tooltip-static:before {\n    border-top: 6px solid rgba(0, 0, 0, 0.5);\n    border-right: 6px solid transparent;\n    border-left: 6px solid transparent;\n    content: \"\";\n    position: absolute;\n    bottom: -6px;\n    margin-left: -7px;\n    left: 50%;\n}\n.tooltip-static:before {\n    border-top-color: #ffcc33;\n}\n\n    ");
+            this.createMeasureTooltip();
+        }
+        Measurement.create = function (options) {
+            options = ol3_fun_1.defaults({}, options || {}, Measurement.DEFAULT_OPTIONS);
+            return new Measurement(options);
+        };
+        Measurement.prototype.createMeasureTooltip = function () {
+            var _this = this;
+            var options = this.options;
+            if (this.measureTooltipElement) {
+                this.measureTooltipElement.parentNode.removeChild(this.measureTooltipElement);
+            }
+            this.measureTooltipElement = document.createElement('div');
+            this.measureTooltipElement.className = 'tooltip tooltip-measure';
+            this.measureTooltip = new ol.Overlay({
+                element: this.measureTooltipElement,
+                offset: [0, -15],
+                positioning: 'bottom-center'
+            });
+            options.map.addOverlay(this.measureTooltip);
+            options.draw.on('drawstart', function (evt) {
+                var listener = evt.feature.getGeometry().on('change', function (evt) {
+                    var geom = evt.target;
+                    var output = _this.formatLength({ map: options.map, line: geom });
+                    _this.measureTooltipElement.innerHTML = output;
+                    _this.measureTooltip.setPosition(geom.getLastCoordinate());
+                });
+                options.draw.once('drawend', function () { return ol.Observable.unByKey(listener); });
+            });
+        };
+        /**
+         * Format length output.
+         * @param {ol.geom.LineString} line The line.
+         * @return {string} The formatted length.
+         */
+        Measurement.prototype.formatLength = function (args) {
+            var options = this.options;
+            var sourceProj = args.map.getView().getProjection();
+            var coordinates = args.line.getCoordinates()
+                .map(function (c) { return ol.proj.transform(c, sourceProj, 'EPSG:4326'); });
+            var distances = coordinates.map(function (c, i) { return wgs84Sphere.haversineDistance(i ? coordinates[i - 1] : c, c); });
+            var length = distances.reduce(function (a, b) { return a + b; }, 0);
+            var lengths = [length];
+            if (options.measureCurrentSegment && distances.length > 2) {
+                lengths.push(distances.pop());
+            }
+            return lengths.map(function (l) {
+                var uom = l < 100 ? "m" : options.uom;
+                return (MeterConvert[uom] * l).toPrecision(5) + " " + uom;
+            }).join("<br/>");
+        };
+        return Measurement;
+    }());
+    Measurement.DEFAULT_OPTIONS = {
+        uom: "ft",
+        measureCurrentSegment: true
+    };
+    exports.Measurement = Measurement;
+});
+define("ol3-draw/examples/measure", ["require", "exports", "ol3-draw/examples/mapmaker", "ol3-draw/ol3-draw", "ol3-draw/measure-extension"], function (require, exports, mapmaker_1, ol3_draw_1, measure_extension_1) {
+    "use strict";
     function run() {
         var map = mapmaker_1.MapMaker.create({
             target: document.getElementsByClassName("map")[0],
-            projection: 'EPSG:4326',
-            center: center,
-            zoom: 15,
+            projection: "EPSG:3857",
+            center: [-9167000, 4148000],
+            zoom: 21,
             basemap: "osm"
         });
-        var layer = new ol.layer.Vector({
-            source: new ol.source.Vector(),
-            style: function (feature, res) {
-                var fillColor = feature.get("color") || "red";
-                var strokeColor = feature.get("color") || "red";
-                return converter.fromJson({
-                    circle: {
-                        radius: 10,
-                        fill: {
-                            color: fillColor
-                        }
-                    },
-                    stroke: {
-                        color: strokeColor,
-                        width: 1
-                    }
-                });
-            }
+        var draw = ol3_draw_1.Draw.create({ map: map, geometryType: "LineString" });
+        measure_extension_1.Measurement.create({
+            map: map,
+            draw: draw,
+            uom: "mi"
         });
-        map.addLayer(layer);
-        var polyline = new ol.geom.LineString([
-            randomize(center),
-            randomize(center),
-            randomize(center),
-            randomize(center),
-            randomize(center),
-        ]);
-        var point = new ol.geom.Point(randomize(center));
-        [polyline, point].map(function (g) {
-            var feature = new ol.Feature(g);
-            feature.set("color", "blue");
-            layer.getSource().addFeature(feature);
-        });
-        var spatial = new LineSegmentRenderer();
-        console.log("measure", spatial.addMeasure(polyline));
     }
     exports.run = run;
 });
-define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, ol3_button_2, common_4) {
+define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, ol3_button_2, common_5) {
     "use strict";
     var Delete = (function (_super) {
         __extends(Delete, _super);
@@ -1042,7 +1129,7 @@ define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3
                         scale: 3
                     };
                     var style = options.style[feature.getGeometry().getType()]
-                        .map(function (s) { return _this.symbolizer.fromJson(common_4.defaults({ text: textTemplate }, s)); });
+                        .map(function (s) { return _this.symbolizer.fromJson(common_5.defaults({ text: textTemplate }, s)); });
                     return style;
                 }
             });
@@ -1098,7 +1185,7 @@ define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3
             return _this;
         }
         Delete.create = function (options) {
-            options = common_4.defaults({}, options, Delete.DEFAULT_OPTIONS);
+            options = common_5.defaults({}, options, Delete.DEFAULT_OPTIONS);
             return ol3_button_2.Button.create(options);
         };
         Delete.prototype.addFeatureLayerAssociation = function (feature, layer) {
@@ -1167,13 +1254,13 @@ define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3
     };
     exports.Delete = Delete;
 });
-define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "bower_components/ol3-fun/ol3-fun/common", "ol3-draw/ol3-button"], function (require, exports, ol, common_5, ol3_button_3) {
+define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "bower_components/ol3-fun/ol3-fun/common", "ol3-draw/ol3-button"], function (require, exports, ol, common_6, ol3_button_3) {
     "use strict";
     var Modify = (function (_super) {
         __extends(Modify, _super);
         function Modify(options) {
             var _this = _super.call(this, options) || this;
-            var styles = common_5.defaults(options.style, Modify.DEFAULT_OPTIONS.style);
+            var styles = common_6.defaults(options.style, Modify.DEFAULT_OPTIONS.style);
             var select = new ol.interaction.Select({
                 style: function (feature, res) {
                     var featureType = feature.getGeometry().getType();
@@ -1244,7 +1331,7 @@ define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "bower_componen
             return _this;
         }
         Modify.create = function (options) {
-            options = common_5.defaults({}, options, Modify.DEFAULT_OPTIONS);
+            options = common_6.defaults({}, options, Modify.DEFAULT_OPTIONS);
             return ol3_button_3.Button.create(options);
         };
         return Modify;
@@ -1315,7 +1402,7 @@ define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "bower_componen
     };
     exports.Modify = Modify;
 });
-define("ol3-draw/ol3-translate", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, ol3_button_4, common_6) {
+define("ol3-draw/ol3-translate", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, ol3_button_4, common_7) {
     "use strict";
     var Translate = (function (_super) {
         __extends(Translate, _super);
@@ -1357,7 +1444,7 @@ define("ol3-draw/ol3-translate", ["require", "exports", "openlayers", "ol3-draw/
             return _this;
         }
         Translate.create = function (options) {
-            options = common_6.defaults({}, options, Translate.DEFAULT_OPTIONS);
+            options = common_7.defaults({}, options, Translate.DEFAULT_OPTIONS);
             return ol3_button_4.Button.create(options);
         };
         return Translate;
@@ -1420,7 +1507,7 @@ define("ol3-draw/ol3-translate", ["require", "exports", "openlayers", "ol3-draw/
     };
     exports.Translate = Translate;
 });
-define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, ol3_button_5, common_7) {
+define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, ol3_button_5, common_8) {
     "use strict";
     var Select = (function (_super) {
         __extends(Select, _super);
@@ -1477,7 +1564,7 @@ define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3
             return _this;
         }
         Select.create = function (options) {
-            options = common_7.defaults({}, options, Select.DEFAULT_OPTIONS);
+            options = common_8.defaults({}, options, Select.DEFAULT_OPTIONS);
             return ol3_button_5.Button.create(options);
         };
         return Select;
@@ -1592,7 +1679,149 @@ define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3
     };
     exports.Select = Select;
 });
-define("ol3-draw/services/wfs-sync", ["require", "exports", "openlayers", "jquery", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, $, common_8) {
+define("ol3-draw/ol3-note", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, ol3_button_6, common_9) {
+    "use strict";
+    var Note = (function (_super) {
+        __extends(Note, _super);
+        function Note(options) {
+            var _this = _super.call(this, options) || this;
+            _this.overlayMap = [];
+            var map = options.map;
+            map.getView().on("change:resolution", function () {
+                console.log(map.getView().getResolution());
+            });
+            var style = _this.options.style.map(function (s) { return _this.symbolizer.fromJson(s); });
+            if (!options.layer) {
+                var layer = new ol.layer.Vector({
+                    style: style,
+                    source: new ol.source.Vector(),
+                    maxResolution: 600
+                });
+                options.map.addLayer(layer);
+                options.layer = layer;
+            }
+            else {
+                // when first active, re-style all features with a note
+                _this.once("change:active", function () {
+                    options.layer
+                        .getSource()
+                        .getFeatures()
+                        .filter(function (f) { return !!f.get(options.noteFieldName); })
+                        .forEach(function (f) { return f.setStyle(style); });
+                });
+            }
+            // every time active changes toggle the overlay and marker styles
+            _this.on("change:active", function () {
+                var active = _this.get("active");
+                _this.overlayMap.forEach(function (v) {
+                    v.feature.setStyle(active ? style : null);
+                    v.overlay.getElement().classList.toggle("hidden", !active);
+                });
+            });
+            {
+                var h_1 = map.on("click", function (args) {
+                    var found = map.forEachFeatureAtPixel(args.pixel, function (feature, layer) {
+                        if (layer === options.layer) {
+                            var note = feature.get(options.noteFieldName);
+                            if (!note)
+                                return;
+                            if (!feature.getStyle())
+                                feature.setStyle(style);
+                            var overlay = _this.forceOverlay(feature);
+                            var wasVisible = !overlay.getElement().classList.contains("hidden");
+                            overlay.getElement().classList.toggle("hidden");
+                            overlay.setPosition(wasVisible ? null : ol.extent.getCenter(feature.getGeometry().getExtent()));
+                            return true;
+                        }
+                    });
+                    if (!_this.get("active"))
+                        return;
+                    if (found) {
+                        //this.set("active", false);
+                        return;
+                    }
+                    {
+                        var feature = new ol.Feature();
+                        feature.setStyle(style);
+                        feature.setGeometryName(options.geometryName);
+                        feature.setGeometry(new ol.geom.Point(args.coordinate));
+                        var overlay = _this.forceOverlay(feature);
+                        // show the popup
+                        overlay.getElement().classList.toggle("hidden");
+                        options.layer.getSource().addFeature(feature);
+                    }
+                });
+                _this.handlers.push(function () { return ol.Observable.unByKey(h_1); });
+            }
+            return _this;
+        }
+        Note.create = function (options) {
+            options = common_9.defaults({}, options, Note.DEFAULT_OPTIONS);
+            return ol3_button_6.Button.create(options);
+        };
+        Note.prototype.forceOverlay = function (feature) {
+            var overlayInfo = this.overlayMap.filter(function (i) { return i.feature === feature; })[0];
+            if (!overlayInfo) {
+                var overlay = this.createOverlay(feature);
+                overlayInfo = { feature: feature, overlay: overlay };
+                this.overlayMap.push(overlayInfo);
+            }
+            return overlayInfo.overlay;
+        };
+        Note.prototype.createOverlay = function (feature) {
+            var options = this.options;
+            var map = options.map;
+            //let textarea = document.createElement("textarea");
+            var note = feature.get(options.noteFieldName) || "";
+            var textarea = common_9.html("<div class=\"contentEditableDiv hidden\"><p class=\"editableP\" contentEditable=\"true\" placeholder=\"[TYPE YOUR MESSAGE HERE]\">" + note + "</p></div>");
+            var input = textarea.getElementsByClassName("editableP")[0];
+            input.addEventListener("input", function () { return feature.set(options.noteFieldName, input.textContent); });
+            var overlay = new ol.Overlay({
+                insertFirst: true,
+                positioning: "bottom-center",
+                offset: [0, -5],
+                element: textarea,
+                position: ol.extent.getCenter(feature.getGeometry().getExtent())
+            });
+            map.addOverlay(overlay);
+            return overlay;
+        };
+        Note.prototype.cssin = function () {
+            _super.prototype.cssin.call(this);
+            this.handlers.push(common_9.cssin(this.options.className + "-input", "\n[contenteditable=true]:empty:before{\n  content: attr(placeholder);\n  display: block;\n  opacity: 0.5;\n}\n\n.contentEditableDiv {\n    width:200px;\n    height:60px;\n    position:relative;\n    overflow:auto;\n    margin-bottom: 8px;\n}\n\n.contentEditableDiv.hidden {\n    display: none;\n}\n\n.editableP{\n    min-height:10px;\n    position:absolute;   \n    bottom:0;\n    left:0;\n    right:0;\n    margin: 0;\n    text-align: center;\n    font-family: cursive;\n    rgba(240,240,240,0.6);\n}"));
+        };
+        return Note;
+    }(ol3_button_6.Button));
+    Note.DEFAULT_OPTIONS = {
+        className: "ol-note",
+        label: "✎",
+        title: "Note",
+        buttonType: Note,
+        eventName: "note",
+        geometryName: "geom",
+        noteFieldName: "note",
+        style: [
+            {
+                "star": {
+                    "fill": {
+                        "color": "red"
+                    },
+                    "opacity": 1,
+                    "stroke": {
+                        "color": "black",
+                        "width": 2
+                    },
+                    "radius": 10,
+                    "radius2": 4,
+                    "points": 5,
+                    "scale": 1
+                }
+            }
+        ]
+    };
+    exports.Note = Note;
+});
+define("ol3-draw/services/wfs-sync", ["require", "exports", "openlayers", "jquery", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, ol, $, common_10) {
     "use strict";
     var serializer = new XMLSerializer();
     var WfsSync = (function () {
@@ -1603,7 +1832,7 @@ define("ol3-draw/services/wfs-sync", ["require", "exports", "openlayers", "jquer
             this.watch();
         }
         WfsSync.create = function (options) {
-            options = common_8.defaults(options || {}, WfsSync.DEFAULT_OPTIONS);
+            options = common_10.defaults(options || {}, WfsSync.DEFAULT_OPTIONS);
             if (!options.formatter) {
                 options.formatter = new ol.format.WFS();
             }
@@ -1616,7 +1845,7 @@ define("ol3-draw/services/wfs-sync", ["require", "exports", "openlayers", "jquer
         };
         WfsSync.prototype.watch = function () {
             var _this = this;
-            var save = common_8.debounce(function () { return _this.saveDrawings({
+            var save = common_10.debounce(function () { return _this.saveDrawings({
                 features: _this.options.source.getFeatures().filter(function (f) { return !!f.get(_this.options.lastUpdateFieldName); })
             }); }, 1000);
             var touch = function (f) {
@@ -1634,7 +1863,6 @@ define("ol3-draw/services/wfs-sync", ["require", "exports", "openlayers", "jquer
             var source = this.options.source;
             source.forEachFeature(function (f) { return watch(f); });
             source.on("addfeature", function (args) {
-                args.feature.set("strname", "29615");
                 watch(args.feature);
                 touch(args.feature);
             });
@@ -1720,11 +1948,12 @@ define("ol3-draw/services/wfs-sync", ["require", "exports", "openlayers", "jquer
     };
     exports.WfsSync = WfsSync;
 });
-define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "jquery", "bower_components/ol3-fun/ol3-fun/common", "ol3-draw/ol3-button", "ol3-draw/ol3-delete", "ol3-draw/ol3-draw", "ol3-draw/ol3-edit", "ol3-draw/ol3-translate", "ol3-draw/ol3-select", "ol3-draw/examples/mapmaker", "ol3-draw/services/wfs-sync"], function (require, exports, ol, $, common_9, ol3_button_6, ol3_delete_1, ol3_draw_1, ol3_edit_1, ol3_translate_1, ol3_select_1, mapmaker_2, wfs_sync_1) {
+define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "jquery", "bower_components/ol3-fun/ol3-fun/common", "ol3-draw/ol3-button", "ol3-draw/ol3-delete", "ol3-draw/ol3-draw", "ol3-draw/ol3-edit", "ol3-draw/ol3-translate", "ol3-draw/ol3-select", "ol3-draw/ol3-note", "ol3-draw/examples/mapmaker", "ol3-draw/services/wfs-sync"], function (require, exports, ol, $, common_11, ol3_button_7, ol3_delete_1, ol3_draw_2, ol3_edit_1, ol3_translate_1, ol3_select_1, ol3_note_1, mapmaker_2, wfs_sync_1) {
     "use strict";
+    var GROUP_NAME = common_11.getParameterByName("GROUP_NAME") || "ol3-draw-examples";
     var WFS_INFO = {
         srsName: "EPSG:3857",
-        wfsUrl: "http://localhost:8080/geoserver/cite/wfs",
+        wfsUrl: location.protocol + "//" + location.hostname + ":8080/geoserver/cite/wfs",
         featureNS: "http://www.opengeospatial.net/cite",
         featurePrefix: "cite",
     };
@@ -1756,7 +1985,7 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "jquer
             featurePrefix: WFS_INFO.featurePrefix,
             featureTypes: [args.featureType],
             srsName: WFS_INFO.srsName,
-            filter: ol.format.filter.equalTo("strname", "29615"),
+            filter: ol.format.filter.equalTo("strname", GROUP_NAME),
         });
         var data = serializer.serializeToString(requestBody);
         $.ajax({
@@ -1802,12 +2031,15 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "jquer
         var pointLayer = new ol.layer.Vector({ source: new ol.source.Vector() });
         var lineLayer = new ol.layer.Vector({ source: new ol.source.Vector() });
         var polygonLayer = new ol.layer.Vector({ source: new ol.source.Vector() });
-        map.addLayer(polygonLayer);
-        map.addLayer(lineLayer);
-        map.addLayer(pointLayer);
+        [polygonLayer, lineLayer, pointLayer].forEach(function (l) {
+            map.addLayer(l);
+            l.getSource().on("addfeature", function (args) {
+                args.feature.set("strname", GROUP_NAME);
+            });
+        });
         var toolbar = [
             ol3_select_1.Select.create({ map: map, label: "?", eventName: "info", boxSelectCondition: ol.events.condition.primaryAction }),
-            ol3_draw_1.Draw.create({
+            ol3_draw_2.Draw.create({
                 map: map, geometryType: "MultiPolygon", label: "▧", title: "Polygon",
                 layers: [polygonLayer],
                 style: [
@@ -1828,7 +2060,7 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "jquer
                     }
                 ]
             }),
-            ol3_draw_1.Draw.create({
+            ol3_draw_2.Draw.create({
                 map: map, geometryType: "Circle", label: "◯", title: "Circle",
                 layers: [polygonLayer],
                 style: [
@@ -1843,15 +2075,15 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "jquer
                     }
                 ]
             }),
-            ol3_draw_1.Draw.create({
+            ol3_draw_2.Draw.create({
                 map: map, geometryType: "MultiLineString", label: "▬", title: "Line",
                 layers: [lineLayer]
             }),
-            ol3_draw_1.Draw.create({
+            ol3_draw_2.Draw.create({
                 map: map, geometryType: "Point", label: "●", title: "Point",
                 layers: [pointLayer]
             }),
-            ol3_draw_1.Draw.create({
+            ol3_draw_2.Draw.create({
                 map: map, geometryType: "Point", label: "★", title: "Gradient", style: [
                     {
                         "star": {
@@ -1877,21 +2109,24 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "jquer
             ol3_translate_1.Translate.create({ map: map, label: "↔" }),
             ol3_edit_1.Modify.create({ map: map, label: "Δ" }),
             ol3_delete_1.Delete.create({ map: map, label: "␡", boxSelectCondition: ol.events.condition.primaryAction }),
-            ol3_button_6.Button.create({ map: map, label: "⎚", title: "Clear", eventName: "clear-drawings" }),
-            ol3_button_6.Button.create({ map: map, label: "💾", eventName: "save", title: "Save" }),
-            ol3_button_6.Button.create({ map: map, label: "X", eventName: "exit", title: "Exit" }),
+            ol3_button_7.Button.create({ map: map, label: "⎚", title: "Clear", eventName: "clear-drawings" }),
+            ol3_button_7.Button.create({ map: map, label: "💾", eventName: "save", title: "Save" }),
+            ol3_button_7.Button.create({ map: map, label: "X", eventName: "exit", title: "Exit" }),
         ];
         toolbar.forEach(function (t, i) { return t.setPosition("left top" + (-i * 2 || '')); });
+        ol3_note_1.Note.create({
+            map: map, position: "left-2 top", layer: pointLayer, noteFieldName: "url"
+        });
         {
-            var h_1 = common_9.cssin("ol3-draw", "\n        .ol-zoom { top: 0.5em; right: 0.5em; left: auto;}\n        .ol-zoom button {color: rgba(0,60,136,1); background-color: transparent; }\n        .ol-overviewmap { right: .5em; top: 4.5em; left: auto; bottom: auto;}\n        ");
+            var h_2 = common_11.cssin("ol3-draw", "\n        .ol-zoom { top: 0.5em; right: 0.5em; left: auto;}\n        .ol-zoom button {color: rgba(0,60,136,1); background-color: transparent; }\n        .ol-overviewmap { right: .5em; top: 4.5em; left: auto; bottom: auto;}\n        ");
             map.on("exit", function () {
                 toolbar.forEach(function (t) { return t.destroy(); });
-                h_1();
+                h_2();
             });
             map.on("info", function (args) {
                 if (args.control.get("active")) {
                     stopOtherControls(map, args.control);
-                    stopControl(map, ol3_draw_1.Draw);
+                    stopControl(map, ol3_draw_2.Draw);
                     stopControl(map, ol3_delete_1.Delete);
                     stopControl(map, ol3_translate_1.Translate);
                     stopControl(map, ol3_edit_1.Modify);
@@ -1900,7 +2135,7 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "jquer
             map.on("delete-feature", function (args) {
                 if (args.control.get("active")) {
                     stopOtherControls(map, args.control);
-                    stopControl(map, ol3_draw_1.Draw);
+                    stopControl(map, ol3_draw_2.Draw);
                     stopControl(map, ol3_edit_1.Modify);
                     stopControl(map, ol3_translate_1.Translate);
                     stopControl(map, ol3_select_1.Select);
@@ -1919,7 +2154,7 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "jquer
                 if (args.control.get("active")) {
                     stopOtherControls(map, args.control);
                     stopControl(map, ol3_delete_1.Delete);
-                    stopControl(map, ol3_draw_1.Draw);
+                    stopControl(map, ol3_draw_2.Draw);
                     stopControl(map, ol3_edit_1.Modify);
                     stopControl(map, ol3_select_1.Select);
                 }
@@ -1928,7 +2163,7 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "jquer
                 if (args.control.get("active")) {
                     stopOtherControls(map, args.control);
                     stopControl(map, ol3_delete_1.Delete);
-                    stopControl(map, ol3_draw_1.Draw);
+                    stopControl(map, ol3_draw_2.Draw);
                     stopControl(map, ol3_translate_1.Translate);
                     stopControl(map, ol3_select_1.Select);
                 }
@@ -1936,13 +2171,18 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "jquer
             map.on("clear-drawings", function (args) {
                 if (args.control.get("active")) {
                     stopControl(map, ol3_delete_1.Delete);
-                    stopControl(map, ol3_draw_1.Draw);
+                    stopControl(map, ol3_draw_2.Draw);
                     stopControl(map, ol3_translate_1.Translate);
                     stopControl(map, ol3_select_1.Select);
-                    map.getControls()
-                        .getArray()
-                        .filter(function (i) { return i instanceof ol3_draw_1.Draw; })
-                        .forEach(function (t) { return t.options.layers.forEach(function (l) { return l.getSource().clear(); }); });
+                    if (prompt("Are you sure you want to delete ALL the features?", "No!")) {
+                        console.log("Too dangerous, sorry");
+                        return false;
+                        map.getControls()
+                            .getArray()
+                            .filter(function (i) { return i instanceof ol3_draw_2.Draw; })
+                            .forEach(function (t) { return t.options.layers.forEach(function (l) { return l.getSource().clear(); }); });
+                    }
+                    ;
                 }
             });
         }
@@ -1974,6 +2214,98 @@ define("ol3-draw/examples/ol3-draw", ["require", "exports", "openlayers", "jquer
                 return new ol.geom.MultiPolygon([poly.getCoordinates()]);
             }
         });
+    }
+    exports.run = run;
+});
+define("ol3-draw/ol3-history", ["require", "exports", "bower_components/ol3-fun/ol3-fun/common"], function (require, exports, common_12) {
+    "use strict";
+    var NavHistory = (function () {
+        function NavHistory(options) {
+            var _this = this;
+            this.options = options;
+            var map = options.map;
+            var history = [];
+            var history_index = 0;
+            var push = function () {
+                history_index = history.push({
+                    zoom: map.getView().getZoom(),
+                    center: map.getView().getCenter()
+                });
+                console.log("push", history_index);
+            };
+            // capture current extent
+            push();
+            var stopped = false;
+            var resume = common_12.debounce(function () {
+                stopped = false;
+                console.log("allow capture");
+            }, this.options.delay);
+            var goto = function () {
+                stopped = true;
+                console.log("suspend capture");
+                console.log("goto", history_index);
+                var extent = history[history_index - 1];
+                map.getView().animate({
+                    zoom: extent.zoom,
+                    center: extent.center,
+                    duration: _this.options.delay / 10
+                }, resume);
+            };
+            var capture = common_12.debounce(function () {
+                if (stopped) {
+                    console.log("capture suspended");
+                    return;
+                }
+                // wipe out everything forward (if anything)
+                while (history.length > history_index)
+                    history.pop();
+                push();
+            }, this.options.delay);
+            map.getView().on(["change:center", "change:resolution"], function () { return capture(); });
+            map.on("nav:back", function () {
+                if (history_index <= 1) {
+                    console.warn("nothing to navigate back to");
+                    return;
+                }
+                history_index--;
+                goto();
+            });
+            map.on("nav:forward", function () {
+                if (history_index >= history.length) {
+                    console.warn("nothing to navigate forward to");
+                    return;
+                }
+                history_index++;
+                goto();
+            });
+        }
+        NavHistory.create = function (options) {
+            options = common_12.defaults({}, options || {}, NavHistory.DEFAULT_OPTIONS);
+            return new NavHistory(options);
+        };
+        return NavHistory;
+    }());
+    NavHistory.DEFAULT_OPTIONS = {
+        delay: 2000
+    };
+    exports.NavHistory = NavHistory;
+});
+define("ol3-draw/examples/ol3-history", ["require", "exports", "ol3-draw/ol3-button", "ol3-draw/examples/mapmaker", "ol3-draw/ol3-history"], function (require, exports, ol3_button_8, mapmaker_3, ol3_history_1) {
+    "use strict";
+    function run() {
+        var map = mapmaker_3.MapMaker.create({
+            target: document.getElementsByClassName("map")[0],
+            projection: "EPSG:3857",
+            center: [-9167000, 4148000],
+            zoom: 21,
+            basemap: "osm"
+        });
+        ol3_history_1.NavHistory.create({
+            map: map,
+            delay: 500
+        });
+        ol3_button_8.Button.create({ map: map, label: "<<", eventName: "nav:back", title: "Back", position: "left-2 top" });
+        ol3_button_8.Button.create({ map: map, label: ">>", eventName: "nav:forward", title: "Forward", position: "left-4 top" });
     }
     exports.run = run;
 });
