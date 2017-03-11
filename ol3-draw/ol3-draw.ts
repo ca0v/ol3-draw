@@ -76,7 +76,7 @@ export class Draw extends Button {
 
     draw.setActive(false);
 
-    ["drawstart"].forEach(eventName => {
+    ["drawstart", "drawend"].forEach(eventName => {
       draw.on(eventName, args => this.dispatchEvent(args));
     });
 

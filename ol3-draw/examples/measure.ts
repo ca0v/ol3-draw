@@ -2,58 +2,40 @@ import ol = require("openlayers");
 import { Button } from "../ol3-button";
 import { MapMaker } from "./mapmaker";
 import { Draw } from "../ol3-draw";
-import { cssin } from "ol3-fun";
+import { cssin, defaults } from "ol3-fun";
 
 let wgs84Sphere = new ol.Sphere(6378137);
 
-let measureTooltipElement: HTMLElement;
-let measureTooltip: ol.Overlay;
-
-function createMeasureTooltip(options: { map: ol.Map }) {
-    if (measureTooltipElement) {
-        measureTooltipElement.parentNode.removeChild(measureTooltipElement);
-    }
-    measureTooltipElement = document.createElement('div');
-    measureTooltipElement.className = 'tooltip tooltip-measure';
-    measureTooltip = new ol.Overlay({
-        element: measureTooltipElement,
-        offset: [0, -15],
-        positioning: 'bottom-center'
-    });
-    options.map.addOverlay(measureTooltip);
+const MeterConvert = {
+    "m": 1,
+    "km": 1 / 1000,
+    "ft": 3.28084,
+    "mi": 0.000621371
+}
+interface MeasurementOptions {
+    map?: ol.Map;
+    draw?: ol.Object;
+    uom?: string;
+    measureCurrentSegment?: boolean;
 }
 
-/**
- * Format length output.
- * @param {ol.geom.LineString} line The line.
- * @return {string} The formatted length.
- */
-function formatLength(args: { line: ol.geom.LineString; map: ol.Map }) {
-    var length;
-    {
-        var coordinates = args.line.getCoordinates();
-        length = 0;
-        var sourceProj = args.map.getView().getProjection();
-        for (var i = 0, ii = coordinates.length - 1; i < ii; ++i) {
-            var c1 = ol.proj.transform(coordinates[i], sourceProj, 'EPSG:4326');
-            var c2 = ol.proj.transform(coordinates[i + 1], sourceProj, 'EPSG:4326');
-            length += wgs84Sphere.haversineDistance(c1, c2);
-        }
+class Measurement {
+    static DEFAULT_OPTIONS: MeasurementOptions = {
+        uom: "ft",
+        measureCurrentSegment: true
     }
-    var output;
-    if (length > 100) {
-        output = (Math.round(length / 1000 * 100) / 100) +
-            ' ' + 'km';
-    } else {
-        output = (Math.round(length * 100) / 100) +
-            ' ' + 'm';
+
+    private measureTooltipElement: HTMLElement;
+    private measureTooltip: ol.Overlay;
+
+    static create(options?: MeasurementOptions) {
+        options = defaults({}, options || {}, Measurement.DEFAULT_OPTIONS);
+        return new Measurement(options);
     }
-    return output;
-};
 
-export function run() {
+    private constructor(public options: MeasurementOptions) {
 
-    cssin("measure", `
+        cssin("measure", `
 
 .tooltip {
     position: relative;
@@ -90,6 +72,68 @@ export function run() {
 
     `);
 
+        this.createMeasureTooltip();
+    }
+
+    private createMeasureTooltip() {
+        let options = this.options;
+
+        if (this.measureTooltipElement) {
+            this.measureTooltipElement.parentNode.removeChild(this.measureTooltipElement);
+        }
+        this.measureTooltipElement = document.createElement('div');
+        this.measureTooltipElement.className = 'tooltip tooltip-measure';
+        this.measureTooltip = new ol.Overlay({
+            element: this.measureTooltipElement,
+            offset: [0, -15],
+            positioning: 'bottom-center'
+        });
+        options.map.addOverlay(this.measureTooltip);
+
+        options.draw.on('drawstart', (evt: ol.interaction.DrawEvent) => {
+            let listener = evt.feature.getGeometry().on('change', evt => {
+                var geom = evt.target;
+                let output = this.formatLength({ map: options.map, line: geom });
+                this.measureTooltipElement.innerHTML = output;
+                this.measureTooltip.setPosition(geom.getLastCoordinate());
+            });
+            options.draw.once('drawend', () => ol.Observable.unByKey(listener));
+        });
+
+    }
+
+    /**
+     * Format length output.
+     * @param {ol.geom.LineString} line The line.
+     * @return {string} The formatted length.
+     */
+    private formatLength(args: { line: ol.geom.LineString; map: ol.Map }) {
+        let options = this.options;
+
+        let sourceProj = args.map.getView().getProjection();
+        let coordinates = args.line.getCoordinates()
+            .map(c => ol.proj.transform(c, sourceProj, 'EPSG:4326'));
+
+        let distances = coordinates.map((c, i) => wgs84Sphere.haversineDistance(i ? coordinates[i - 1] : c, c));
+        let length = distances.reduce((a, b) => a + b, 0);
+
+        let lengths = [length];
+        
+        if (options.measureCurrentSegment && distances.length > 2) {
+            lengths.push(distances.pop());
+        }
+
+        return lengths.map(l => {
+            let uom = l < 100 ? "m" : options.uom;
+            return (MeterConvert[uom] * l).toPrecision(5) + " " + uom;
+        }).join("<br/>");
+
+    }
+
+}
+
+export function run() {
+
     let map = MapMaker.create({
         target: document.getElementsByClassName("map")[0],
         projection: "EPSG:3857",
@@ -98,24 +142,11 @@ export function run() {
         basemap: "osm"
     });
 
-    Draw.create({ map: map, geometryType: "LineString" })
-        .on('drawstart',
-        function (evt) {
-            // set sketch
-            var sketch = evt.feature;
+    let draw = Draw.create({ map: map, geometryType: "LineString" });
 
-            /** @type {ol.Coordinate|undefined} */
-            var tooltipCoord = evt.coordinate;
-
-            let listener = sketch.getGeometry().on('change', function (evt) {
-                var geom = evt.target;
-                var output;
-                output = formatLength({ map: map, line: geom });
-                tooltipCoord = geom.getLastCoordinate();
-                measureTooltipElement.innerHTML = output;
-                measureTooltip.setPosition(tooltipCoord);
-            });
-        }, this);
-
-    createMeasureTooltip({ map: map });
+    Measurement.create({
+        map: map,
+        draw: draw,
+        uom: "mi"
+    });
 }
