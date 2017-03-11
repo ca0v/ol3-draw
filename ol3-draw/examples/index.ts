@@ -4,6 +4,7 @@ export function run() {
     let labs = `
     index
     ol3-draw&GROUP_NAME=ol3-draw-examples
+    ol3-history
     `;
 
     let styles = document.createElement("style");

@@ -1,18 +1,6 @@
 import ol = require("openlayers");
-import { cssin, html, mixin } from "ol3-fun/ol3-fun/common";
+import { cssin, html, mixin, pair, range } from "ol3-fun/ol3-fun/common";
 import { StyleConverter } from "ol3-symbolizer";
-
-function range(n: number) {
-    let result = new Array(n);
-    for (let i = 0; i < n; i++) result[i] = i;
-    return <number[]>result;
-}
-
-function pair<A, B>(a1: A[], a2: B[]) {
-    let result: Array<[A, B]> = [];
-    a1.forEach(v1 => a2.forEach(v2 => result.push([v1, v2])));
-    return result;
-}
 
 export interface ButtonOptions extends olx.control.ControlOptions {
     map?: ol.Map;
