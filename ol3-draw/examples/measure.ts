@@ -2,6 +2,7 @@ import ol = require("openlayers");
 import { Button } from "../ol3-button";
 import { MapMaker } from "./mapmaker";
 import { Draw } from "../ol3-draw";
+import { Modify } from "../ol3-edit";
 import { Measurement } from "../measure-extension";
 import { cssin, defaults } from "ol3-fun";
 
@@ -16,11 +17,10 @@ export function run() {
         basemap: "osm"
     });
 
-    let draw = Draw.create({ map: map, geometryType: "LineString" });
-
     Measurement.create({
         map: map,
-        draw: draw,
+        draw: Draw.create({ map: map, geometryType: "MultiLineString" }),
+        edit: Modify.create({ map: map, position: "top right-2" }),
         uom: "mi"
     });
 }

@@ -15,6 +15,7 @@ const MeterConvert = {
 export interface MeasurementOptions {
     map?: ol.Map;
     draw?: ol.Object;
+    edit?: ol.Object;
     uom?: string;
     measureCurrentSegment?: boolean;
 }
@@ -100,6 +101,32 @@ export class Measurement {
             options.draw.once('drawend', () => ol.Observable.unByKey(listener));
         });
 
+        options.edit.on('modifystart', (evt: ol.interaction.ModifyEvent) => {
+            let feature = evt.features.getArray()[0];
+            let geom = (<ol.geom.MultiLineString>feature.getGeometry());
+            let originalDistances = this.computeDistances({ map: options.map, line: geom.getLineString(0) });
+
+            let listener = geom.on('change', evt => {
+                let distances = this.computeDistances({ map: options.map, line: geom.getLineString(0) });
+                distances.some((d, i) => {
+                    if (d === originalDistances[i]) return false;
+                    this.measureTooltipElement.innerHTML = this.formatLengths([d, distances.reduce((a, b) => a + b, 0)]);
+                    this.measureTooltip.setPosition(geom.getLineString(0).getCoordinates()[i]);
+                    return true;
+                })
+            });
+            options.edit.once('modifyend', () => ol.Observable.unByKey(listener));
+        });
+    }
+
+    private computeDistances(args: { line: ol.geom.LineString; map: ol.Map }) {
+        let options = this.options;
+
+        let sourceProj = args.map.getView().getProjection();
+        let coordinates = args.line.getCoordinates()
+            .map(c => ol.proj.transform(c, sourceProj, 'EPSG:4326'));
+
+        return coordinates.map((c, i) => wgs84Sphere.haversineDistance(i ? coordinates[i - 1] : c, c));
     }
 
     /**
@@ -109,25 +136,24 @@ export class Measurement {
      */
     private formatLength(args: { line: ol.geom.LineString; map: ol.Map }) {
         let options = this.options;
+        let distances = this.computeDistances(args);
 
-        let sourceProj = args.map.getView().getProjection();
-        let coordinates = args.line.getCoordinates()
-            .map(c => ol.proj.transform(c, sourceProj, 'EPSG:4326'));
-
-        let distances = coordinates.map((c, i) => wgs84Sphere.haversineDistance(i ? coordinates[i - 1] : c, c));
         let length = distances.reduce((a, b) => a + b, 0);
 
         let lengths = [length];
-        
+
         if (options.measureCurrentSegment && distances.length > 2) {
             lengths.push(distances.pop());
         }
 
+        return this.formatLengths(lengths);
+    }
+
+    private formatLengths(lengths: number[]) {
+        let options = this.options;
         return lengths.map(l => {
             let uom = l < 100 ? "m" : options.uom;
             return (MeterConvert[uom] * l).toPrecision(5) + " " + uom;
         }).join("<br/>");
-
     }
-
 }

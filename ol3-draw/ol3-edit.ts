@@ -132,6 +132,10 @@ export class Modify extends Button {
       }
     });
 
+    ["modifystart", "modifyend"].forEach(eventName => {
+      modify.on(eventName, args => this.dispatchEvent(args));
+    });
+
     select.on("select", (args: ol.interaction.SelectEvent) => {
       modify.setActive(true);
     });
