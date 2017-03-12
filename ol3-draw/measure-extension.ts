@@ -92,26 +92,29 @@ export class Measurement {
         options.map.addOverlay(this.measureTooltip);
 
         options.draw.on('drawstart', (evt: ol.interaction.DrawEvent) => {
-            let listener = evt.feature.getGeometry().on('change', evt => {
+            let listener = evt.feature.getGeometry().on('change', (evt: { target: ol.geom.Geometry }) => {
                 var geom = evt.target;
-                let output = this.formatLength({ map: options.map, line: geom });
+                let coordinates = this.flatten({ geom: geom });
+                let output = this.formatLength({ map: options.map, coordinates: coordinates });
                 this.measureTooltipElement.innerHTML = output;
-                this.measureTooltip.setPosition(geom.getLastCoordinate());
+                this.measureTooltip.setPosition(coordinates[coordinates.length - 1]);
             });
             options.draw.once('drawend', () => ol.Observable.unByKey(listener));
         });
 
         options.edit.on('modifystart', (evt: ol.interaction.ModifyEvent) => {
             let feature = evt.features.getArray()[0];
-            let geom = (<ol.geom.MultiLineString>feature.getGeometry());
-            let originalDistances = this.computeDistances({ map: options.map, line: geom.getLineString(0) });
+            let geom = feature.getGeometry();
+            let coordinates = this.flatten({ geom: geom });
+            let originalDistances = this.computeDistances({ map: options.map, coordinates: coordinates });
 
             let listener = geom.on('change', evt => {
-                let distances = this.computeDistances({ map: options.map, line: geom.getLineString(0) });
+                let coordinates = this.flatten({ geom: geom });
+                let distances = this.computeDistances({ map: options.map, coordinates: coordinates });
                 distances.some((d, i) => {
                     if (d === originalDistances[i]) return false;
                     this.measureTooltipElement.innerHTML = this.formatLengths([d, distances.reduce((a, b) => a + b, 0)]);
-                    this.measureTooltip.setPosition(geom.getLineString(0).getCoordinates()[i]);
+                    this.measureTooltip.setPosition(coordinates[i]);
                     return true;
                 })
             });
@@ -119,13 +122,28 @@ export class Measurement {
         });
     }
 
-    private computeDistances(args: { line: ol.geom.LineString; map: ol.Map }) {
-        let options = this.options;
+    // move to ol3-fun
+    private flatten(args: { geom: ol.geom.Geometry }) {
+        let coordinates: ol.Coordinate[];
 
+        if (args.geom instanceof ol.geom.LineString) {
+            coordinates = args.geom.getCoordinates();
+        }
+        else if (args.geom instanceof ol.geom.MultiLineString) {
+            coordinates = args.geom.getLineString(0).getCoordinates();
+        }
+        else if (args.geom instanceof ol.geom.Polygon) {
+            coordinates = args.geom.getLinearRing(0).getCoordinates();
+        }
+        else if (args.geom instanceof ol.geom.MultiPolygon) {
+            coordinates = args.geom.getPolygon(0).getLinearRing(0).getCoordinates();
+        }
+        return coordinates;
+    }
+
+    private computeDistances(args: { coordinates: ol.Coordinate[]; map: ol.Map }) {
         let sourceProj = args.map.getView().getProjection();
-        let coordinates = args.line.getCoordinates()
-            .map(c => ol.proj.transform(c, sourceProj, 'EPSG:4326'));
-
+        let coordinates = args.coordinates.map(c => ol.proj.transform(c, sourceProj, 'EPSG:4326'));
         return coordinates.map((c, i) => wgs84Sphere.haversineDistance(i ? coordinates[i - 1] : c, c));
     }
 
@@ -134,7 +152,7 @@ export class Measurement {
      * @param {ol.geom.LineString} line The line.
      * @return {string} The formatted length.
      */
-    private formatLength(args: { line: ol.geom.LineString; map: ol.Map }) {
+    private formatLength(args: { coordinates: ol.Coordinate[]; map: ol.Map }) {
         let options = this.options;
         let distances = this.computeDistances(args);
 

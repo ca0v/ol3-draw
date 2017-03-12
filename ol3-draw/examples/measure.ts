@@ -17,6 +17,8 @@ export function run() {
         basemap: "osm"
     });
 
+    Draw.create({ map: map, geometryType: "MultiPolygon", position: "top-2 right" });
+
     Measurement.create({
         map: map,
         draw: Draw.create({ map: map, geometryType: "MultiLineString" }),
