@@ -1,19 +1,32 @@
+/**
+ * Automatically post changes to a WFS-T service
+ */
 import ol = require("openlayers");
 import $ = require("jquery");
-import { debounce, defaults } from "ol3-fun/ol3-fun/common";
+import { debounce, defaults } from "ol3-fun";
 
 export interface WfsSyncOptions {
+  // wfs endpoint
   wfsUrl: string;
+  // source to watch
   source: ol.source.Vector;
+  // wfs namespace
   featureNS: string;
+  // wfs namespace prefix
   featurePrefix: string;
+  // formatter for turning feature into a service request
   formatter?: ol.format.WFS;
   // feature geometry to layer mapping (Point -> "point-layer")
-  targets: { [name: string]: string }; // ol.geom.GeometryType
+  targets: { [name: string]: string }; // name is ol.geom.GeometryType
+  // the attribute name to use to manage versioning
   lastUpdateFieldName?: string;
+  // target SRS, what spatial reference should be used when saving?
   srsName?: string;
+  // the SRS of the feature geometry
   sourceSrs?: string;
+  // the name of the attribute holding the unique feature identifier (gid)
   featureIdFieldName?: string;
+  // convertion option for reducing or transforming a cloned geometry just before saving
   converter?: (geom: ol.geom.Geometry) => ol.geom.Geometry;
 }
 
@@ -22,7 +35,11 @@ const serializer = new XMLSerializer();
 export class WfsSync {
 
   private options: WfsSyncOptions;
+
+  // remember when we saved in the past
   private lastSavedTime: number;
+
+  // track deletes until its time to save changes
   private deletes: ol.Feature[];
 
   static DEFAULT_OPTIONS = <WfsSyncOptions>{
@@ -43,13 +60,16 @@ export class WfsSync {
     return result;
   }
 
-  constructor(options: WfsSyncOptions) {
+  private constructor(options: WfsSyncOptions) {
     this.options = options;
     this.lastSavedTime = Date.now();
     this.deletes = [];
     this.watch();
   }
 
+  /**
+   * start watching the feature collection, saving when there's a lull in the action
+   */
   private watch() {
 
     let save = debounce(() => this.saveDrawings({
@@ -84,6 +104,9 @@ export class WfsSync {
 
   }
 
+/**
+ * Performs the actual save of a list of feature (immutable)
+ */
   private saveDrawings(args: {
     features: ol.Feature[];
   }) {
