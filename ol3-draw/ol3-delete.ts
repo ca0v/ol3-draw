@@ -6,6 +6,7 @@ import { Format } from "ol3-symbolizer";
 export interface DeleteControlOptions extends IButtonOptions {
     multi?: boolean;
     style?: { [name: string]: Format.Style[] };
+    selection?: ol.interaction.Select;
     boxSelectCondition?: (mapBrowserEvent: ol.MapBrowserEvent) => boolean;
 }
 
@@ -89,7 +90,7 @@ export class Delete extends Button {
         let map = options.map;
         let featureLayers = <Array<{ feature: ol.Feature; source: ol.source.Vector }>>[];
 
-        let selection = new ol.interaction.Select({
+        let selection = options.selection = options.selection || new ol.interaction.Select({
             condition: ol.events.condition.click,
             multi: false,
             style: (feature: ol.Feature, res: number) => {
@@ -140,15 +141,6 @@ export class Delete extends Button {
                 }));
         });
 
-        let doit = () => {
-            selection.getFeatures().forEach(f => {
-                let l = selection.getLayer(f) || this.featureLayerAssociation_[f.getId()];
-                l && l.getSource().removeFeature(f);
-            });
-            selection.getFeatures().clear();
-            this.featureLayerAssociation_ = [];
-        }
-
         this.once("change:active", () => {
             [selection, boxSelect].forEach(i => {
                 i.setActive(false);
@@ -165,12 +157,26 @@ export class Delete extends Button {
 
         this.on("change:active", () => {
             let active = this.get("active");
-            if (!active) {
-                doit();
-                selection.getFeatures().clear();
-            }
             [boxSelect, selection].forEach(i => i.setActive(active));
         });
 
     }
+
+    public clear() {
+        let selection = this.options.selection;
+        selection.getFeatures().clear();
+        this.featureLayerAssociation_ = [];
+    }
+
+    public delete() {
+        let selection = this.options.selection;
+        selection.getFeatures().forEach(f => {
+            let l = selection.getLayer(f) || this.featureLayerAssociation_[f.getId()];
+            l && l.getSource().removeFeature(f);
+        });
+        selection.getFeatures().clear();
+        this.featureLayerAssociation_ = [];
+    }
+
+
 }
