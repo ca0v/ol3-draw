@@ -168,8 +168,7 @@ export class WfsSync {
 
           toInsert.forEach((f, i) => {
             let id = responseInfo.insertIds[i];
-            // how to know to use "gid"?
-            f.set("gid", id.split(".").pop());
+            f.set(this.options.featureIdFieldName, id.split(".").pop());
             f.setId(id);
           });
 
