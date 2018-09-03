@@ -1,9 +1,13 @@
 import ol = require("openlayers");
-import { Button } from "./ol3-button";
-import { Draw } from "./ol3-draw";
-import { cssin, defaults } from "ol3-fun";
+import { cssin, defaults } from "ol3-fun/index";
 
-let wgs84Sphere = new ol.Sphere(6378137);
+/**
+ * #### Replacement of `ol/Sphere` constructor with `ol/sphere` functions
+ * The `ol/Sphere` constructor has been removed.  
+ * If you were using the `getGeodesicArea` method, use the `getArea` function instead.  
+ * If you were using the `haversineDistance` method, use the `getDistance` function instead.
+ */
+let wgs84Sphere = (<any>ol).sphere as { getArea: Function; getDistance: Function };
 
 const MeterConvert = {
     "m": 1,
@@ -91,7 +95,7 @@ export class Measurement {
         });
         options.map.addOverlay(this.measureTooltip);
 
-        options.draw.on('drawstart', (evt: ol.interaction.DrawEvent) => {
+        options.draw.on('drawstart', (evt: any) => {
             let listener = evt.feature.getGeometry().on('change', (evt: { target: ol.geom.Geometry }) => {
                 var geom = evt.target;
                 let coordinates = this.flatten({ geom: geom });
@@ -102,13 +106,13 @@ export class Measurement {
             options.draw.once('drawend', () => ol.Observable.unByKey(listener));
         });
 
-        options.edit.on('modifystart', (evt: ol.interaction.ModifyEvent) => {
+        options.edit.on('modifystart', (evt: any) => {
             let feature = evt.features.getArray()[0];
             let geom = feature.getGeometry();
             let coordinates = this.flatten({ geom: geom });
             let originalDistances = this.computeDistances({ map: options.map, coordinates: coordinates });
 
-            let listener = geom.on('change', evt => {
+            let listener = geom.on('change', () => {
                 let coordinates = this.flatten({ geom: geom });
                 let distances = this.computeDistances({ map: options.map, coordinates: coordinates });
                 distances.some((d, i) => {
@@ -144,7 +148,7 @@ export class Measurement {
     private computeDistances(args: { coordinates: ol.Coordinate[]; map: ol.Map }) {
         let sourceProj = args.map.getView().getProjection();
         let coordinates = args.coordinates.map(c => ol.proj.transform(c, sourceProj, 'EPSG:4326'));
-        return coordinates.map((c, i) => wgs84Sphere.haversineDistance(i ? coordinates[i - 1] : c, c));
+        return coordinates.map((c, i) => wgs84Sphere.getDistance(i ? coordinates[i - 1] : c, c));
     }
 
     /**

@@ -1,11 +1,5 @@
-import ol = require("openlayers");
-import { Button } from "../ol3-button";
 import { MapMaker } from "./mapmaker";
-import { Draw } from "../ol3-draw";
-import { Modify } from "../ol3-edit";
-import { Measurement } from "../measure-extension";
-import { cssin, defaults } from "ol3-fun";
-
+import { Draw, Modify, Measurement } from "../index";
 
 export function run() {
 

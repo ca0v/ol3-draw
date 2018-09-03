@@ -1,7 +1,7 @@
 import ol = require("openlayers");
 import { Button, ButtonOptions as IButtonOptions } from "./ol3-button";
 import { html, defaults } from "ol3-fun/ol3-fun/common";
-import { Format } from "ol3-symbolizer";
+import { Format } from "ol3-symbolizer/index";
 
 export interface TranslateControlOptions extends IButtonOptions {
     style?: { [name: string]: Format.Style[] };
@@ -87,7 +87,7 @@ export class Translate extends Button {
             features: select.getFeatures()
         });
 
-        select.on("select", (args: ol.interaction.SelectEvent) => {
+        select.on("select", () => {
             translate.setActive(true);
         });
 

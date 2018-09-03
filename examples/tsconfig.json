@@ -4,13 +4,10 @@
         "target": "es5",
         "declaration": true,
         "noImplicitAny": false,
-        "outFile": "built/index.js",
+        "outFile": "../built/examples.max.js",
         "sourceMap": true,
         "moduleResolution": "classic",
-        "baseUrl": "./node_modules"
+        "baseUrl": "../node_modules"
     },
-    "include": [
-        "index.ts",
-        "ol3-draw"
-    ]
+    "include": ["index.ts"]
 }

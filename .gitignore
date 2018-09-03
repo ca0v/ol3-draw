@@ -3,5 +3,7 @@
 *.d.ts
 typings
 bower_components
-built
+node_modules
 private
+!built/**
+!static/require.js

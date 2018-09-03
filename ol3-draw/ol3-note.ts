@@ -1,7 +1,7 @@
 import ol = require("openlayers");
 import { Button, ButtonOptions } from "./ol3-button";
 import { cssin, defaults, html } from "ol3-fun/ol3-fun/common";
-import { Format } from "ol3-symbolizer";
+import { Format } from "ol3-symbolizer/index";
 
 /**
  * Draws a point that renders as a ol.overlay at a certain zoom level

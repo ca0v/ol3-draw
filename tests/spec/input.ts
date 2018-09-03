@@ -1,0 +1,27 @@
+import { should, shouldEqual } from "../base";
+import {describe, it} from "mocha";
+import { DrawControlOptions, Draw } from "../../ol3-draw/ol3-draw";
+
+describe("Draw Tests", () => {
+    it("Draw", () => {
+        should(!!Draw, "Draw");
+    });
+
+    it("DEFAULT_OPTIONS", () => {
+        let options = Draw.DEFAULT_OPTIONS;
+        checkDefaultInputOptions(options);
+    });
+
+    it("options of an Input instance", () => {
+        let input = Draw.create();
+        checkDefaultInputOptions(input.options);
+    });
+
+});
+
+function checkDefaultInputOptions(options: DrawControlOptions) {
+    should(!!options, "options");
+    shouldEqual(options.className, "ol-input", "className");
+    shouldEqual(options.map, undefined, "map");
+    shouldEqual(options.position, "bottom left", "position");
+}

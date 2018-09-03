@@ -1,7 +1,6 @@
 import ol = require("openlayers");
-import { Button } from "../ol3-button";
+import { Button, NavHistory } from "../index";
 import { MapMaker } from "./mapmaker";
-import { NavHistory } from "../ol3-history";
 
 export function run() {
 

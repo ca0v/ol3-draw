@@ -1,16 +1,9 @@
 import ol = require("openlayers");
 import $ = require("jquery");
 
-import { cssin, mixin, getParameterByName } from "ol3-fun/ol3-fun/common";
-import { Button } from "../ol3-button";
-import { Delete } from "../ol3-delete";
-import { Draw } from "../ol3-draw";
-import { Modify } from "../ol3-edit";
-import { Translate } from "../ol3-translate";
-import { Select } from "../ol3-select";
-import { Note } from "../ol3-note";
+import { cssin, getParameterByName } from "ol3-fun/ol3-fun/common";
+import { Button, Delete, Draw, Modify, Translate, Select, Note, WfsSync } from "../index";
 import { MapMaker } from "./mapmaker";
-import { WfsSync } from "../services/wfs-sync";
 
 
 const GROUP_NAME = getParameterByName("GROUP_NAME") || "ol3-draw-examples";
@@ -82,7 +75,7 @@ function loadAndWatch(args: {
       if (args.map) {
         let extent = args.map.getView().calculateExtent(args.map.getSize());
         features.forEach(f => ol.extent.extend(extent, f.getGeometry().getExtent()));
-        args.map.getView().fit(extent, args.map.getSize());
+        args.map.getView().fit(extent, { size: args.map.getSize() });
       }
 
       WfsSync.create({
@@ -229,9 +222,7 @@ export function run() {
       h();
     });
 
-    map.on("info", (args: {
-      control: Button
-    }) => {
+    map.on("info", (args: any) => {
       if (args.control.get("active")) {
         stopOtherControls(map, args.control);
         stopControl(map, Draw);
@@ -249,6 +240,7 @@ export function run() {
         stopControl(map, Translate);
         stopControl(map, Select);
       }
+      return true;
     });
 
     map.on("draw-feature", (args: { control: Draw }) => {
@@ -259,6 +251,7 @@ export function run() {
         stopControl(map, Translate);
         stopControl(map, Select);
       }
+      return true;
     });
 
     map.on("translate-feature", (args: { control: Draw }) => {

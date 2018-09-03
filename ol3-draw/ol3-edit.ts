@@ -1,7 +1,7 @@
 import ol = require("openlayers");
 import { html, defaults } from "ol3-fun/ol3-fun/common";
 import { Button, ButtonOptions as IButtonOptions } from "./ol3-button";
-import { Format } from "ol3-symbolizer";
+import { Format } from "ol3-symbolizer/index";
 
 export interface ModifyControlOptions extends IButtonOptions {
   style?: { [name: string]: Format.Style[] };
@@ -136,7 +136,7 @@ export class Modify extends Button {
       modify.on(eventName, args => this.dispatchEvent(args));
     });
 
-    select.on("select", (args: ol.interaction.SelectEvent) => {
+    select.on("select", () => {
       modify.setActive(true);
     });
 

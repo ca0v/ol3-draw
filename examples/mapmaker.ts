@@ -1,5 +1,8 @@
 import ol = require("openlayers");
+import { olx } from "openlayers";
+
 import { cssin, mixin } from "ol3-fun/ol3-fun/common";
+import { Button, Draw } from "../index";
 
 export class MapMaker {
     static DEFAULT_OPTIONS: olx.MapOptions = {
@@ -48,6 +51,14 @@ export class MapMaker {
             view: view,
             layers: [osm]
         });
-        return map;
+        return map as ol.Map & MapEventExtensions;
     }
+}
+
+interface MapEventExtensions {
+    on(type: "delete-feature", listener: (args: { control: Draw }) => any);
+    on(type: "draw-feature", listener: (args: { control: Draw }) => any);
+    on(type: "translate-feature", listener: (args: { control: Draw }) => any);
+    on(type: "modify-feature", listener: (args: { control: Draw }) => any);
+    on(type: "clear-drawings", listener: (args: { control: Button }) => any);
 }

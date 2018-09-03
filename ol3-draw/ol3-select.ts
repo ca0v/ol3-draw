@@ -1,7 +1,7 @@
 import ol = require("openlayers");
 import { Button, ButtonOptions as IButtonOptions } from "./ol3-button";
 import { defaults } from "ol3-fun/ol3-fun/common";
-import { Format } from "ol3-symbolizer";
+import { Format } from "ol3-symbolizer/index";
 
 export interface SelectOptions extends IButtonOptions {
     multi?: boolean;

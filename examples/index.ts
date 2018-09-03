@@ -1,6 +1,10 @@
+import "./measure";
+import "./ol3-draw";
+import "./ol3-history";
+
 export function run() {
     let l = window.location;
-    let path = `${l.origin}${l.pathname}?run=ol3-draw/examples/`;
+    let path = `${l.origin}${l.pathname}?run=examples/`;
     let labs = `
     index
     measure
@@ -27,9 +31,6 @@ export function run() {
         //.sort()
         .map(lab => `<div class='test'><a href='${path}${lab}&debug=0'>${lab}</a></div>`)
         .join("\n");
-
-
-    html += `<a href='${l.origin}${l.pathname}?run=ol3-draw/tests/index'>tests</a>`;
 
     document.write(html);
 };

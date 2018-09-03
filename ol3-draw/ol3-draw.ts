@@ -1,7 +1,7 @@
 import ol = require("openlayers");
 import { Button, ButtonOptions as ButtonOptions } from "./ol3-button";
 import { html, mixin } from "ol3-fun/ol3-fun/common";
-import { Format } from "ol3-symbolizer";
+import { Format } from "ol3-symbolizer/index";
 
 export interface DrawControlOptions extends ButtonOptions {
   map?: ol.Map;

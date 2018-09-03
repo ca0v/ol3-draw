@@ -3,7 +3,7 @@
  */
 import ol = require("openlayers");
 import $ = require("jquery");
-import { debounce, defaults } from "ol3-fun";
+import { debounce, defaults } from "ol3-fun/index";
 
 export interface WfsSyncOptions {
   // wfs endpoint
@@ -83,7 +83,7 @@ export class WfsSync {
 
     let watch = (f: ol.Feature) => {
       f.getGeometry().on("change", () => touch(f));
-      f.on("propertychange", (args: { key: string; oldValue: any }) => {
+      f.on("propertychange", (args: any) => {
         if (args.key === this.options.lastUpdateFieldName) return;
         touch(f);
       });

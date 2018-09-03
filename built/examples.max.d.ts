@@ -468,3 +468,50 @@ declare module "index" {
     import { Measurement } from "ol3-draw/measure-extension";
     export { Draw, Button, Delete, Modify, Translate, Select, Note, Measurement, NavHistory, WfsSync, };
 }
+declare module "examples/mapmaker" {
+    import ol = require("openlayers");
+    import { olx } from "openlayers";
+    import { Button, Draw } from "index";
+    export class MapMaker {
+        static DEFAULT_OPTIONS: olx.MapOptions;
+        static create(options: {
+            target: Element;
+            center: [number, number];
+            projection: string;
+            zoom: number;
+            basemap: string;
+        }): ol.Map & MapEventExtensions;
+    }
+    interface MapEventExtensions {
+        on(type: "delete-feature", listener: (args: {
+            control: Draw;
+        }) => any): any;
+        on(type: "draw-feature", listener: (args: {
+            control: Draw;
+        }) => any): any;
+        on(type: "translate-feature", listener: (args: {
+            control: Draw;
+        }) => any): any;
+        on(type: "modify-feature", listener: (args: {
+            control: Draw;
+        }) => any): any;
+        on(type: "clear-drawings", listener: (args: {
+            control: Button;
+        }) => any): any;
+    }
+}
+declare module "examples/measure" {
+    export function run(): void;
+}
+declare module "examples/ol3-draw" {
+    export function run(): void;
+}
+declare module "examples/ol3-history" {
+    export function run(): void;
+}
+declare module "examples/index" {
+    import "examples/measure";
+    import "examples/ol3-draw";
+    import "examples/ol3-history";
+    export function run(): void;
+}

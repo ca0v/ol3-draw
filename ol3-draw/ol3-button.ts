@@ -1,6 +1,7 @@
 import ol = require("openlayers");
+import {olx} from "openlayers";
 import { cssin, html, mixin, pair, range } from "ol3-fun/ol3-fun/common";
-import { StyleConverter } from "ol3-symbolizer";
+import { StyleConverter } from "ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer";
 
 export interface ButtonOptions extends olx.control.ControlOptions {
     map?: ol.Map;
