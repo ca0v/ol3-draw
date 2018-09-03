@@ -1,4 +1,3 @@
-import ol = require("openlayers");
 import { Button, NavHistory } from "../index";
 import { MapMaker } from "./mapmaker";
 
@@ -17,7 +16,7 @@ export function run() {
         delay: 500
     });
 
-    Button.create({ map: map, label: "<<", eventName: "nav:back", title: "Back", position: "left-2 top" });
-    Button.create({ map: map, label: ">>", eventName: "nav:forward", title: "Forward", position: "left-4 top" });
+    Button.create({ map: map, label: "<<", eventName: "nav:back", title: "Back", position: "right-2 top" });
+    Button.create({ map: map, label: ">>", eventName: "nav:forward", title: "Forward", position: "right top" });
 
 }

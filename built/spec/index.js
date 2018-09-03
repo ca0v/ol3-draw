@@ -32,7 +32,7 @@ define("tests/base", ["require", "exports"], function (require, exports) {
     exports.should = should;
     function shouldEqual(a, b, message) {
         if (a != b)
-            console.warn(a, b);
+            console.warn("\"" + a + "\" <> \"" + b + "\"");
         should(a == b, message);
     }
     exports.shouldEqual = shouldEqual;
@@ -1206,7 +1206,7 @@ define("ol3-draw/ol3-draw", ["require", "exports", "openlayers", "ol3-draw/ol3-b
     }(ol3_button_1.Button));
     exports.Draw = Draw;
 });
-define("tests/spec/input", ["require", "exports", "tests/base", "mocha", "ol3-draw/ol3-draw"], function (require, exports, base_1, mocha_1, ol3_draw_1) {
+define("tests/spec/draw", ["require", "exports", "tests/base", "mocha", "ol3-draw/ol3-draw"], function (require, exports, base_1, mocha_1, ol3_draw_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     mocha_1.describe("Draw Tests", function () {
@@ -1229,7 +1229,340 @@ define("tests/spec/input", ["require", "exports", "tests/base", "mocha", "ol3-dr
         base_1.shouldEqual(options.position, "top left", "position");
     }
 });
-define("tests/index", ["require", "exports", "tests/spec/input"], function (require, exports) {
+define("node_modules/ol3-fun/ol3-fun/navigation", ["require", "exports", "openlayers", "jquery", "node_modules/ol3-fun/ol3-fun/common"], function (require, exports, ol, $, common_3) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    function zoomToFeature(map, feature, options) {
+        var promise = $.Deferred();
+        options = common_3.defaults(options || {}, {
+            duration: 1000,
+            padding: 256,
+            minResolution: 2 * map.getView().getMinResolution()
+        });
+        var view = map.getView();
+        var currentExtent = view.calculateExtent(map.getSize());
+        var targetExtent = feature.getGeometry().getExtent();
+        var doit = function (duration) {
+            view.fit(targetExtent, {
+                size: map.getSize(),
+                padding: [options.padding, options.padding, options.padding, options.padding],
+                minResolution: options.minResolution,
+                duration: duration,
+                callback: function () { return promise.resolve(); },
+            });
+        };
+        if (ol.extent.containsExtent(currentExtent, targetExtent)) {
+            doit(options.duration);
+        }
+        else if (ol.extent.containsExtent(currentExtent, targetExtent)) {
+            doit(options.duration);
+        }
+        else {
+            var fullExtent = ol.extent.createEmpty();
+            ol.extent.extend(fullExtent, currentExtent);
+            ol.extent.extend(fullExtent, targetExtent);
+            var dscale = ol.extent.getWidth(fullExtent) / ol.extent.getWidth(currentExtent);
+            var duration = 0.5 * options.duration;
+            view.fit(fullExtent, {
+                size: map.getSize(),
+                padding: [options.padding, options.padding, options.padding, options.padding],
+                minResolution: options.minResolution,
+                duration: duration
+            });
+            setTimeout(function () { return doit(0.5 * options.duration); }, duration);
+        }
+        return promise;
+    }
+    exports.zoomToFeature = zoomToFeature;
+});
+define("node_modules/ol3-fun/ol3-fun/parse-dms", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    function decDegFromMatch(m) {
+        var signIndex = {
+            "-": -1,
+            "N": 1,
+            "S": -1,
+            "E": 1,
+            "W": -1
+        };
+        var latLonIndex = {
+            "-": "",
+            "N": "lat",
+            "S": "lat",
+            "E": "lon",
+            "W": "lon"
+        };
+        var degrees, minutes, seconds, sign, latLon;
+        sign = signIndex[m[2]] || signIndex[m[1]] || signIndex[m[6]] || 1;
+        degrees = Number(m[3]);
+        minutes = m[4] ? Number(m[4]) : 0;
+        seconds = m[5] ? Number(m[5]) : 0;
+        latLon = latLonIndex[m[1]] || latLonIndex[m[6]];
+        if (!inRange(degrees, 0, 180))
+            throw 'Degrees out of range';
+        if (!inRange(minutes, 0, 60))
+            throw 'Minutes out of range';
+        if (!inRange(seconds, 0, 60))
+            throw 'Seconds out of range';
+        return {
+            decDeg: sign * (degrees + minutes / 60 + seconds / 3600),
+            latLon: latLon
+        };
+    }
+    function inRange(value, a, b) {
+        return value >= a && value <= b;
+    }
+    function parse(dmsString) {
+        var _a;
+        dmsString = dmsString.trim();
+        var dmsRe = /([NSEW])?(-)?(\d+(?:\.\d+)?)[°º:d\s]?\s?(?:(\d+(?:\.\d+)?)['’‘′:]\s?(?:(\d{1,2}(?:\.\d+)?)(?:"|″|’’|'')?)?)?\s?([NSEW])?/i;
+        var dmsString2;
+        var m1 = dmsString.match(dmsRe);
+        if (!m1)
+            throw 'Could not parse string';
+        if (m1[1]) {
+            m1[6] = undefined;
+            dmsString2 = dmsString.substr(m1[0].length - 1).trim();
+        }
+        else {
+            dmsString2 = dmsString.substr(m1[0].length).trim();
+        }
+        var decDeg1 = decDegFromMatch(m1);
+        var m2 = dmsString2.match(dmsRe);
+        var decDeg2 = m2 && decDegFromMatch(m2);
+        if (typeof decDeg1.latLon === 'undefined') {
+            if (!isNaN(decDeg1.decDeg) && decDeg2 && isNaN(decDeg2.decDeg)) {
+                return decDeg1.decDeg;
+            }
+            else if (!isNaN(decDeg1.decDeg) && decDeg2 && !isNaN(decDeg2.decDeg)) {
+                decDeg1.latLon = 'lat';
+                decDeg2.latLon = 'lon';
+            }
+            else {
+                throw 'Could not parse string';
+            }
+        }
+        if (typeof decDeg2.latLon === 'undefined') {
+            decDeg2.latLon = decDeg1.latLon === 'lat' ? 'lon' : 'lat';
+        }
+        return _a = {},
+            _a[decDeg1.latLon] = decDeg1.decDeg,
+            _a[decDeg2.latLon] = decDeg2.decDeg,
+            _a;
+    }
+    exports.parse = parse;
+});
+define("node_modules/ol3-fun/index", ["require", "exports", "node_modules/ol3-fun/ol3-fun/common", "node_modules/ol3-fun/ol3-fun/navigation", "node_modules/ol3-fun/ol3-fun/parse-dms"], function (require, exports, common, navigation, dms) {
+    "use strict";
+    var index = common.defaults(common, {
+        dms: dms,
+        navigation: navigation
+    });
+    return index;
+});
+define("ol3-draw/services/wfs-sync", ["require", "exports", "openlayers", "jquery", "node_modules/ol3-fun/index"], function (require, exports, ol, $, index_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var serializer = new XMLSerializer();
+    var WfsSync = (function () {
+        function WfsSync(options) {
+            this.options = options;
+            this.lastSavedTime = Date.now();
+            this.deletes = [];
+            this.watch();
+        }
+        WfsSync.create = function (options) {
+            options = index_1.defaults(options || {}, WfsSync.DEFAULT_OPTIONS);
+            if (!options.formatter) {
+                options.formatter = new ol.format.WFS();
+            }
+            if (!options.srsName) {
+                options.srsName = options.source.getProjection().getCode();
+            }
+            var result = new WfsSync(options);
+            return result;
+        };
+        WfsSync.prototype.on = function (name, cb) {
+            if (!this._onhash)
+                this._onhash = [];
+            if (!this._onhash[name])
+                this._onhash[name] = [];
+            this._onhash[name].push(cb);
+        };
+        WfsSync.prototype.trigger = function (name, args) {
+            if (!this._onhash)
+                return;
+            if (!this._onhash[name])
+                return;
+            this._onhash[name].some(function (f) { return f(args); });
+        };
+        WfsSync.prototype.watch = function () {
+            var _this = this;
+            var save = index_1.debounce(function () {
+                try {
+                    _this.trigger("before-save");
+                    _this.saveDrawings({
+                        features: _this.options.source.getFeatures().filter(function (f) { return !!f.get(_this.options.lastUpdateFieldName); })
+                    }).then(function () { return _this.trigger("after-save"); });
+                }
+                catch (ex) {
+                    _this.trigger("error", { exception: ex });
+                    throw ex;
+                }
+            }, 1000);
+            var touch = function (f) {
+                f.set(_this.options.lastUpdateFieldName, Date.now());
+                save();
+            };
+            var watch = function (f) {
+                f.getGeometry().on("change", function () { return touch(f); });
+                f.on("propertychange", function (args) {
+                    if (args.key === _this.options.lastUpdateFieldName)
+                        return;
+                    touch(f);
+                });
+            };
+            var source = this.options.source;
+            source.forEachFeature(function (f) { return watch(f); });
+            source.on("addfeature", function (args) {
+                watch(args.feature);
+                touch(args.feature);
+            });
+            source.on("removefeature", function (args) {
+                _this.deletes.push(args.feature);
+                touch(args.feature);
+            });
+        };
+        WfsSync.prototype.saveDrawings = function (args) {
+            var _this = this;
+            var features = args.features.filter(function (f) { return _this.lastSavedTime <= f.get(_this.options.lastUpdateFieldName); });
+            var saveTo = function (featureType, geomType) {
+                var toSave = features.filter(function (f) { return f.getGeometry().getType() === geomType; });
+                var toDelete = _this.deletes.filter(function (f) { return !!f.get(_this.options.featureIdFieldName); });
+                if (0 === (toSave.length + toDelete.length)) {
+                    console.info("nothing to save:", featureType, geomType);
+                    return;
+                }
+                if (_this.options.sourceSrs && _this.options.sourceSrs !== _this.options.srsName) {
+                    var srsIn_1 = new ol.proj.Projection({ code: _this.options.sourceSrs });
+                    var srsOut_1 = new ol.proj.Projection({ code: _this.options.srsName });
+                    toSave = toSave.map(function (f) { return f.clone(); });
+                    toSave.forEach(function (f) { return f.getGeometry().transform(srsIn_1, srsOut_1); });
+                    throw "should not be necessary, perform on server, cloning will prevent insert key from updating";
+                }
+                var format = _this.options.formatter;
+                var toInsert = toSave.filter(function (f) { return !f.get(_this.options.featureIdFieldName); });
+                var toUpdate = toSave.filter(function (f) { return !!f.get(_this.options.featureIdFieldName); });
+                if (_this.options.converter && toInsert.length) {
+                    toInsert.forEach(function (f) { return f.setGeometry(_this.options.converter(f.getGeometry())); });
+                }
+                toInsert.forEach(function (f) { return f.set(_this.options.lastUpdateFieldName, undefined); });
+                toUpdate.forEach(function (f) { return f.set(_this.options.lastUpdateFieldName, undefined); });
+                toDelete.forEach(function (f) { return f.set(_this.options.lastUpdateFieldName, undefined); });
+                var requestBody = format.writeTransaction(toInsert, toUpdate, toDelete, {
+                    featureNS: _this.options.featureNS,
+                    featurePrefix: _this.options.featurePrefix,
+                    featureType: featureType,
+                    srsName: _this.options.srsName,
+                    nativeElements: []
+                });
+                return $.ajax({
+                    type: "POST",
+                    url: _this.options.wfsUrl,
+                    data: serializer.serializeToString(requestBody),
+                    contentType: "application/xml",
+                    dataType: "xml",
+                    error: function (a, status, message) {
+                        console.error(status);
+                        _this.trigger("error", { status: status, message: message });
+                    },
+                    success: function (response) {
+                        if (response.documentElement.tagName === "ows:ExceptionReport") {
+                            var exception = response.documentElement.getElementsByTagName("ows:ExceptionText")[0];
+                            _this.trigger("error", exception.textContent);
+                        }
+                        var responseInfo = format.readTransactionResponse(response);
+                        if (responseInfo.transactionSummary.totalDeleted) {
+                            console.log("totalDeleted: ", responseInfo.transactionSummary.totalDeleted);
+                        }
+                        if (responseInfo.transactionSummary.totalInserted) {
+                            console.log("totalInserted: ", responseInfo.transactionSummary.totalInserted);
+                        }
+                        if (responseInfo.transactionSummary.totalUpdated) {
+                            console.log("totalUpdated: ", responseInfo.transactionSummary.totalUpdated);
+                        }
+                        console.assert(toInsert.length === responseInfo.transactionSummary.totalInserted, "number inserted should equal number of new keys");
+                        if (_this.options.converter) {
+                        }
+                        toInsert.forEach(function (f, i) {
+                            var id = responseInfo.insertIds[i];
+                            f.set(_this.options.featureIdFieldName, id.split(".").pop());
+                            f.setId(id);
+                        });
+                    }
+                });
+            };
+            this.lastSavedTime = Date.now();
+            var promises = Object.keys(this.options.targets).map(function (k) { return saveTo(_this.options.targets[k], k); });
+            return $.when.apply(this, promises);
+        };
+        WfsSync.DEFAULT_OPTIONS = {
+            featureIdFieldName: "gid",
+            lastUpdateFieldName: "touched",
+        };
+        return WfsSync;
+    }());
+    exports.WfsSync = WfsSync;
+});
+define("tests/spec/wfs-sync", ["require", "exports", "openlayers", "tests/base", "mocha", "ol3-draw/services/wfs-sync"], function (require, exports, ol, base_2, mocha_2, wfs_sync_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var WFS_INFO = {
+        srsName: "EPSG:3857",
+        wfsUrl: location.protocol + "//" + location.hostname + ":8080/geoserver/cite/wfs",
+        featureNS: "http://www.opengeospatial.net/cite",
+        featurePrefix: "cite",
+    };
+    mocha_2.describe("wfs-sync", function () {
+        mocha_2.it("WfsSync", function () {
+            base_2.should(!!wfs_sync_1.WfsSync, "WfsSync");
+        });
+        mocha_2.it("DEFAULT_OPTIONS", function () {
+            var options = wfs_sync_1.WfsSync.DEFAULT_OPTIONS;
+            checkDefaultInputOptions(options);
+        });
+        mocha_2.it("should invoke a POST request", function (done) {
+            var source = new ol.source.Vector();
+            var service = wfs_sync_1.WfsSync.create({
+                wfsUrl: WFS_INFO.wfsUrl,
+                featureNS: WFS_INFO.featureNS,
+                featurePrefix: WFS_INFO.featurePrefix,
+                srsName: WFS_INFO.srsName,
+                sourceSrs: WFS_INFO.srsName,
+                source: source,
+                targets: {
+                    "Point": "point_layer"
+                }
+            });
+            service.on("after-save", function (args) {
+                console.warn(args);
+                done();
+            });
+            service.on("error", function (args) {
+                base_2.shouldEqual(args, "Feature type 'point_layer' is not available: ", "point_layer not available error message");
+                done();
+            });
+            source.addFeature(new ol.Feature(new ol.geom.Point([0, 0])));
+        });
+    });
+    function checkDefaultInputOptions(options) {
+        base_2.should(!!options, "options");
+        base_2.shouldEqual(options.featureIdFieldName, "gid", "featureIdFieldName");
+        base_2.shouldEqual(options.lastUpdateFieldName, "touched", "lastUpdateFieldName");
+    }
+});
+define("tests/index", ["require", "exports", "tests/spec/draw", "tests/spec/wfs-sync"], function (require, exports) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
 });

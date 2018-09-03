@@ -2276,14 +2276,37 @@ define("ol3-draw/services/wfs-sync", ["require", "exports", "openlayers", "jquer
             var result = new WfsSync(options);
             return result;
         };
+        WfsSync.prototype.on = function (name, cb) {
+            if (!this._onhash)
+                this._onhash = [];
+            if (!this._onhash[name])
+                this._onhash[name] = [];
+            this._onhash[name].push(cb);
+        };
+        WfsSync.prototype.trigger = function (name, args) {
+            if (!this._onhash)
+                return;
+            if (!this._onhash[name])
+                return;
+            this._onhash[name].some(function (f) { return f(args); });
+        };
         /**
          * start watching the feature collection, saving when there's a lull in the action
          */
         WfsSync.prototype.watch = function () {
             var _this = this;
-            var save = index_1.debounce(function () { return _this.saveDrawings({
-                features: _this.options.source.getFeatures().filter(function (f) { return !!f.get(_this.options.lastUpdateFieldName); })
-            }); }, 1000);
+            var save = index_1.debounce(function () {
+                try {
+                    _this.trigger("before-save");
+                    _this.saveDrawings({
+                        features: _this.options.source.getFeatures().filter(function (f) { return !!f.get(_this.options.lastUpdateFieldName); })
+                    }).then(function () { return _this.trigger("after-save"); });
+                }
+                catch (ex) {
+                    _this.trigger("error", { exception: ex });
+                    throw ex;
+                }
+            }, 1000);
             var touch = function (f) {
                 f.set(_this.options.lastUpdateFieldName, Date.now());
                 save();
@@ -2345,13 +2368,22 @@ define("ol3-draw/services/wfs-sync", ["require", "exports", "openlayers", "jquer
                     srsName: _this.options.srsName,
                     nativeElements: []
                 });
-                $.ajax({
+                return $.ajax({
                     type: "POST",
                     url: _this.options.wfsUrl,
                     data: serializer.serializeToString(requestBody),
                     contentType: "application/xml",
                     dataType: "xml",
+                    error: function (a, status, message) {
+                        console.error(status);
+                        _this.trigger("error", { status: status, message: message });
+                    },
                     success: function (response) {
+                        // ExceptionReport?
+                        if (response.documentElement.tagName === "ows:ExceptionReport") {
+                            var exception = response.documentElement.getElementsByTagName("ows:ExceptionText")[0];
+                            _this.trigger("error", exception.textContent);
+                        }
                         var responseInfo = format.readTransactionResponse(response);
                         if (responseInfo.transactionSummary.totalDeleted) {
                             console.log("totalDeleted: ", responseInfo.transactionSummary.totalDeleted);
@@ -2376,9 +2408,8 @@ define("ol3-draw/services/wfs-sync", ["require", "exports", "openlayers", "jquer
                 });
             };
             this.lastSavedTime = Date.now();
-            Object.keys(this.options.targets).forEach(function (k) {
-                saveTo(_this.options.targets[k], k);
-            });
+            var promises = Object.keys(this.options.targets).map(function (k) { return saveTo(_this.options.targets[k], k); });
+            return $.when.apply(this, promises);
         };
         WfsSync.DEFAULT_OPTIONS = {
             featureIdFieldName: "gid",

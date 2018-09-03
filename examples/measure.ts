@@ -11,12 +11,10 @@ export function run() {
         basemap: "osm"
     });
 
-    Draw.create({ map: map, geometryType: "MultiPolygon", position: "top-2 right" });
-
     Measurement.create({
         map: map,
-        draw: Draw.create({ map: map, geometryType: "MultiLineString" }),
-        edit: Modify.create({ map: map, position: "top right-2" }),
+        draw: Draw.create({ map: map, position: "top right-1", label: "┈", title: "Measure", geometryType: "MultiLineString" }),
+        edit: Modify.create({ map: map, position: "top right-3", label: "✎", title: "Edit Measurements" }),
         uom: "mi"
     });
 }

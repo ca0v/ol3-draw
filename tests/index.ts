@@ -1,1 +1,2 @@
-import "./spec/input";
+import "./spec/draw";
+import "./spec/wfs-sync";

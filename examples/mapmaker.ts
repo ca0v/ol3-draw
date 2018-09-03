@@ -25,6 +25,10 @@ export class MapMaker {
             bottom:0;
             position: absolute;
         }
+        .ol-scale-line {
+            left: auto;
+            right: 1em;
+        }
         `);
 
         let osm = new ol.layer.Tile({

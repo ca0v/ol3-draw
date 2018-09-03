@@ -67,14 +67,37 @@ export class WfsSync {
     this.watch();
   }
 
+  // onhash
+  private _onhash: any;
+
+  public on(name: string, cb: (args: any) => void | boolean) {
+    if (!this._onhash) this._onhash = [];
+    if (!this._onhash[name]) this._onhash[name] = [];
+    this._onhash[name].push(cb);
+  }
+
+  private trigger(name: string, args?: any) {
+    if (!this._onhash) return;
+    if (!this._onhash[name]) return;
+    (this._onhash[name] as Function[]).some(f => f(args));
+  }
+
   /**
    * start watching the feature collection, saving when there's a lull in the action
    */
   private watch() {
 
-    let save = debounce(() => this.saveDrawings({
-      features: this.options.source.getFeatures().filter(f => !!f.get(this.options.lastUpdateFieldName))
-    }), 1000);
+    let save = debounce(() => {
+      try {
+        this.trigger("before-save");
+        this.saveDrawings({
+          features: this.options.source.getFeatures().filter(f => !!f.get(this.options.lastUpdateFieldName))
+        }).then(() => this.trigger("after-save"));
+      } catch (ex) {
+        this.trigger("error", { exception: ex });
+        throw ex;
+      }
+    }, 1000);
 
     let touch = (f: ol.Feature) => {
       f.set(this.options.lastUpdateFieldName, Date.now());
@@ -104,9 +127,9 @@ export class WfsSync {
 
   }
 
-/**
- * Performs the actual save of a list of feature (immutable)
- */
+  /**
+   * Performs the actual save of a list of feature (immutable)
+   */
   private saveDrawings(args: {
     features: ol.Feature[];
   }) {
@@ -164,13 +187,22 @@ export class WfsSync {
         "insertIds": string[]
       };
 
-      $.ajax({
+      return $.ajax({
         type: "POST",
         url: this.options.wfsUrl,
         data: serializer.serializeToString(requestBody),
         contentType: "application/xml",
         dataType: "xml",
+        error: (a, status, message) => {
+          console.error(status);
+          this.trigger("error", { status, message });
+        },
         success: (response: XMLDocument) => {
+          // ExceptionReport?
+          if (response.documentElement.tagName === "ows:ExceptionReport") {
+            let exception = response.documentElement.getElementsByTagName("ows:ExceptionText")[0];
+            this.trigger("error", exception.textContent);
+          }
           let responseInfo = <ResponseType><any>format.readTransactionResponse(response);
           if (responseInfo.transactionSummary.totalDeleted) {
             console.log("totalDeleted: ", responseInfo.transactionSummary.totalDeleted);
@@ -200,10 +232,8 @@ export class WfsSync {
     };
 
     this.lastSavedTime = Date.now();
-    Object.keys(this.options.targets).forEach(k => {
-      saveTo(this.options.targets[k], <ol.geom.GeometryType>k);
-    });
-
+    let promises = Object.keys(this.options.targets).map(k => saveTo(this.options.targets[k], <ol.geom.GeometryType>k));
+    return $.when.apply(this, promises);
   }
 
 

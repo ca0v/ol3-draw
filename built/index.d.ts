@@ -412,6 +412,9 @@ declare module "ol3-draw/services/wfs-sync" {
         static DEFAULT_OPTIONS: WfsSyncOptions;
         static create(options?: WfsSyncOptions): WfsSync;
         private constructor();
+        private _onhash;
+        on(name: string, cb: (args: any) => void | boolean): void;
+        private trigger;
         /**
          * start watching the feature collection, saving when there's a lull in the action
          */

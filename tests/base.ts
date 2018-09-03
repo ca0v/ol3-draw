@@ -15,7 +15,7 @@ export function should(result: boolean, message: string) {
 }
 
 export function shouldEqual<T>(a: T, b: T, message: string) {
-    if (a != b) console.warn(a, b);
+    if (a != b) console.warn(`"${a}" <> "${b}"`);
     should(a == b, message);
 }
 
