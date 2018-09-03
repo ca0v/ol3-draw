@@ -1140,7 +1140,7 @@ define("ol3-draw/ol3-button", ["require", "exports", "openlayers", "node_modules
             return _this;
         }
         Button.create = function (options) {
-            options = common_1.mixin(common_1.mixin({}, Button.DEFAULT_OPTIONS), options);
+            options = common_1.mixin(common_1.mixin({}, Button.DEFAULT_OPTIONS), options || {});
             options.element = options.element || document.createElement("DIV");
             var button = new (options.buttonType)(options);
             if (options.map) {
@@ -1219,7 +1219,7 @@ define("ol3-draw/ol3-draw", ["require", "exports", "openlayers", "ol3-draw/ol3-b
                 }
             });
             var style = _this.options.style.map(function (s) { return _this.symbolizer.fromJson(s); });
-            if (!options.layers) {
+            if (options.map && !options.layers) {
                 var layer = new ol.layer.Vector({
                     style: style,
                     source: new ol.source.Vector()
@@ -1230,7 +1230,7 @@ define("ol3-draw/ol3-draw", ["require", "exports", "openlayers", "ol3-draw/ol3-b
             return _this;
         }
         Draw.create = function (options) {
-            options = common_2.mixin(common_2.mixin({}, Draw.DEFAULT_OPTIONS), options);
+            options = common_2.mixin(common_2.mixin({}, Draw.DEFAULT_OPTIONS), options || {});
             return ol3_button_1.Button.create(options);
         };
         Draw.prototype.createInteraction = function () {
@@ -1260,6 +1260,7 @@ define("ol3-draw/ol3-draw", ["require", "exports", "openlayers", "ol3-draw/ol3-b
             geometryName: "geom",
             label: "Draw",
             title: "Draw",
+            position: "top left",
             buttonType: Draw,
             eventName: "draw-feature",
             style: [

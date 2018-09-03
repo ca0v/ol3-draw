@@ -19,6 +19,7 @@ export class Draw extends Button {
     geometryName: "geom",
     label: "Draw",
     title: "Draw",
+    position: "top left",
     buttonType: Draw,
     eventName: "draw-feature",
     style: [
@@ -56,7 +57,7 @@ export class Draw extends Button {
   public options: DrawControlOptions;
 
   static create(options?: DrawControlOptions) {
-    options = mixin(mixin({}, Draw.DEFAULT_OPTIONS), options);
+    options = mixin(mixin({}, Draw.DEFAULT_OPTIONS), options || {});
     return Button.create(options);
   }
 
@@ -113,7 +114,7 @@ export class Draw extends Button {
 
     let style = this.options.style.map(s => this.symbolizer.fromJson(s));
 
-    if (!options.layers) {
+    if (options.map && !options.layers) {
       let layer = new ol.layer.Vector({
         style: style,
         source: new ol.source.Vector()

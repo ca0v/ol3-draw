@@ -207,6 +207,372 @@ define("node_modules/ol3-fun/ol3-fun/common", ["require", "exports"], function (
     }
     exports.shuffle = shuffle;
 });
+define("node_modules/ol3-symbolizer/ol3-symbolizer/common/assign", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    function assign(obj, prop, value) {
+        if (value === null)
+            return;
+        if (value === undefined)
+            return;
+        if (typeof value === "object") {
+            if (Object.keys(value).length === 0)
+                return;
+        }
+        if (prop === "image") {
+            if (value.hasOwnProperty("radius")) {
+                prop = "circle";
+            }
+            if (value.hasOwnProperty("points")) {
+                var points = value["points"];
+                if (points < Infinity) {
+                    prop = "star";
+                }
+            }
+        }
+        obj[prop] = value;
+    }
+    exports.assign = assign;
+});
+define("node_modules/ol3-symbolizer/ol3-symbolizer/common/mixin", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    function mixin(a, b) {
+        Object.keys(b).forEach(function (k) { return a[k] = b[k]; });
+        return a;
+    }
+    exports.mixin = mixin;
+});
+define("node_modules/ol3-symbolizer/ol3-symbolizer/common/doif", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    function doif(v, cb) {
+        if (v !== undefined && v !== null)
+            cb(v);
+    }
+    exports.doif = doif;
+});
+define("node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-cross", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var Shapeshifter = (function () {
+        function Shapeshifter() {
+        }
+        Shapeshifter.is = function (style) {
+            if (!style)
+                return false;
+            if (!!style.cross)
+                return true;
+            if (!style.star)
+                return false;
+            if (!style.star.radius)
+                return false;
+            if (4 !== style.star.points)
+                return false;
+            if (0 != style.star.radius2)
+                return false;
+            if (0 != style.star.angle)
+                return false;
+            return true;
+        };
+        Shapeshifter.as = function (style) {
+            var star = style.star;
+            if (!star)
+                throw "star expected";
+            var result = {
+                cross: {
+                    size: star.radius * 2,
+                    opacity: star.opacity,
+                    rotateWithView: star.rotateWithView,
+                    rotation: star.rotation,
+                    scale: star.scale,
+                    snapToPixel: star.snapToPixel,
+                    stroke: star.stroke,
+                }
+            };
+            return result;
+        };
+        Shapeshifter.inverse = function (style) {
+            var cross = style.cross;
+            if (!cross)
+                return style;
+            return {
+                star: {
+                    radius: cross.size / 2,
+                    radius2: 0,
+                    points: 4,
+                    angle: 0,
+                    opacity: cross.opacity,
+                    rotateWithView: cross.rotateWithView,
+                    rotation: cross.rotation,
+                    scale: cross.scale,
+                    snapToPixel: cross.snapToPixel,
+                    stroke: cross.stroke,
+                }
+            };
+        };
+        return Shapeshifter;
+    }());
+    exports.Shapeshifter = Shapeshifter;
+});
+define("node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-square", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var Shapeshifter = (function () {
+        function Shapeshifter() {
+        }
+        Shapeshifter.is = function (style) {
+            if (!style)
+                return false;
+            if (!!style.square)
+                return true;
+            if (!style.star)
+                return false;
+            if (!style.star.radius)
+                return false;
+            if (4 !== style.star.points)
+                return false;
+            if (undefined !== style.star.radius2)
+                return false;
+            if (0.7853981633974483 != style.star.angle)
+                return false;
+            return true;
+        };
+        Shapeshifter.as = function (style) {
+            var star = style.star;
+            if (!star)
+                throw "star expected";
+            var result = {
+                square: {
+                    size: star.radius * 2,
+                    fill: star.fill,
+                    opacity: star.opacity,
+                    rotateWithView: star.rotateWithView,
+                    rotation: star.rotation,
+                    scale: star.scale,
+                    snapToPixel: star.snapToPixel,
+                    stroke: star.stroke,
+                }
+            };
+            return result;
+        };
+        Shapeshifter.inverse = function (style) {
+            var square = style.square;
+            if (!square)
+                return style;
+            return {
+                star: {
+                    radius: square.size / 2,
+                    radius2: undefined,
+                    points: 4,
+                    angle: 0.7853981633974483,
+                    fill: square.fill,
+                    opacity: square.opacity,
+                    rotateWithView: square.rotateWithView,
+                    rotation: square.rotation,
+                    scale: square.scale,
+                    snapToPixel: square.snapToPixel,
+                    stroke: square.stroke,
+                }
+            };
+        };
+        return Shapeshifter;
+    }());
+    exports.Shapeshifter = Shapeshifter;
+});
+define("node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-diamond", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var Shapeshifter = (function () {
+        function Shapeshifter() {
+        }
+        Shapeshifter.is = function (style) {
+            if (!style)
+                return false;
+            if (!!style.diamond)
+                return true;
+            if (!style.star)
+                return false;
+            if (!style.star.radius)
+                return false;
+            if (4 !== style.star.points)
+                return false;
+            if (undefined !== style.star.radius2)
+                return false;
+            if (0 != style.star.angle)
+                return false;
+            return true;
+        };
+        Shapeshifter.as = function (style) {
+            var star = style.star;
+            if (!star)
+                throw "star expected";
+            var result = {
+                diamond: {
+                    size: style.star.radius * 2,
+                    fill: star.fill,
+                    opacity: star.opacity,
+                    rotateWithView: star.rotateWithView,
+                    rotation: star.rotation,
+                    scale: star.scale,
+                    snapToPixel: star.snapToPixel,
+                    stroke: star.stroke,
+                }
+            };
+            return result;
+        };
+        Shapeshifter.inverse = function (style) {
+            var diamond = style.diamond;
+            if (!diamond)
+                return style;
+            return {
+                star: {
+                    radius: diamond.size / 2,
+                    radius2: undefined,
+                    points: 4,
+                    angle: 0,
+                    fill: diamond.fill,
+                    opacity: diamond.opacity,
+                    rotateWithView: diamond.rotateWithView,
+                    rotation: diamond.rotation,
+                    scale: diamond.scale,
+                    snapToPixel: diamond.snapToPixel,
+                    stroke: diamond.stroke,
+                }
+            };
+        };
+        return Shapeshifter;
+    }());
+    exports.Shapeshifter = Shapeshifter;
+});
+define("node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-triangle", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var Shapeshifter = (function () {
+        function Shapeshifter() {
+        }
+        Shapeshifter.is = function (style) {
+            if (!style)
+                return false;
+            if (!!style.triangle)
+                return true;
+            if (!style.star)
+                return false;
+            if (!style.star.radius)
+                return false;
+            if (3 !== style.star.points)
+                return false;
+            if (undefined != style.star.radius2)
+                return false;
+            if (0 != style.star.angle)
+                return false;
+            return true;
+        };
+        Shapeshifter.as = function (style) {
+            var star = style.star;
+            if (!star)
+                throw "star expected";
+            var result = {
+                triangle: {
+                    size: star.radius * 2,
+                    fill: star.fill,
+                    opacity: star.opacity,
+                    rotateWithView: star.rotateWithView,
+                    rotation: star.rotation,
+                    scale: star.scale,
+                    snapToPixel: star.snapToPixel,
+                    stroke: star.stroke,
+                }
+            };
+            return result;
+        };
+        Shapeshifter.inverse = function (style) {
+            var triangle = style.triangle;
+            if (!triangle)
+                return style;
+            return {
+                star: {
+                    radius: triangle.size / 2,
+                    radius2: undefined,
+                    points: 3,
+                    angle: 0,
+                    fill: triangle.fill,
+                    opacity: triangle.opacity,
+                    rotateWithView: triangle.rotateWithView,
+                    rotation: triangle.rotation,
+                    scale: triangle.scale,
+                    snapToPixel: triangle.snapToPixel,
+                    stroke: triangle.stroke,
+                }
+            };
+        };
+        return Shapeshifter;
+    }());
+    exports.Shapeshifter = Shapeshifter;
+});
+define("node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-x", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var Shapeshifter = (function () {
+        function Shapeshifter() {
+        }
+        Shapeshifter.is = function (style) {
+            if (!style)
+                return false;
+            if (!!style.x)
+                return true;
+            if (!style.star)
+                return false;
+            if (!style.star.radius)
+                return false;
+            if (4 !== style.star.points)
+                return false;
+            if (0 != style.star.radius2)
+                return false;
+            if (0.7853981633974483 != style.star.angle)
+                return false;
+            return true;
+        };
+        Shapeshifter.as = function (style) {
+            var star = style.star;
+            if (!star)
+                throw "star expected";
+            var result = {
+                x: {
+                    size: star.radius * 2,
+                    opacity: star.opacity,
+                    rotateWithView: star.rotateWithView,
+                    rotation: star.rotation,
+                    scale: star.scale,
+                    snapToPixel: star.snapToPixel,
+                    stroke: star.stroke,
+                }
+            };
+            return result;
+        };
+        Shapeshifter.inverse = function (style) {
+            var x = style.x;
+            if (!x)
+                return style;
+            return {
+                star: {
+                    radius: x.size / 2,
+                    radius2: 0,
+                    points: 4,
+                    angle: 0.7853981633974483,
+                    opacity: x.opacity,
+                    rotateWithView: x.rotateWithView,
+                    rotation: x.rotation,
+                    scale: x.scale,
+                    snapToPixel: x.snapToPixel,
+                    stroke: x.stroke,
+                }
+            };
+        };
+        return Shapeshifter;
+    }());
+    exports.Shapeshifter = Shapeshifter;
+});
 define("node_modules/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer", ["require", "exports", "openlayers", "node_modules/ol3-symbolizer/ol3-symbolizer/common/assign", "node_modules/ol3-symbolizer/ol3-symbolizer/common/mixin", "node_modules/ol3-symbolizer/ol3-symbolizer/common/doif", "node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-cross", "node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-square", "node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-diamond", "node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-triangle", "node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-x"], function (require, exports, ol, assign_1, mixin_1, doif_1, as_cross_1, as_square_1, as_diamond_1, as_triangle_1, as_x_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
@@ -682,7 +1048,7 @@ define("ol3-draw/ol3-button", ["require", "exports", "openlayers", "node_modules
             return _this;
         }
         Button.create = function (options) {
-            options = common_1.mixin(common_1.mixin({}, Button.DEFAULT_OPTIONS), options);
+            options = common_1.mixin(common_1.mixin({}, Button.DEFAULT_OPTIONS), options || {});
             options.element = options.element || document.createElement("DIV");
             var button = new (options.buttonType)(options);
             if (options.map) {
@@ -761,7 +1127,7 @@ define("ol3-draw/ol3-draw", ["require", "exports", "openlayers", "ol3-draw/ol3-b
                 }
             });
             var style = _this.options.style.map(function (s) { return _this.symbolizer.fromJson(s); });
-            if (!options.layers) {
+            if (options.map && !options.layers) {
                 var layer = new ol.layer.Vector({
                     style: style,
                     source: new ol.source.Vector()
@@ -772,7 +1138,7 @@ define("ol3-draw/ol3-draw", ["require", "exports", "openlayers", "ol3-draw/ol3-b
             return _this;
         }
         Draw.create = function (options) {
-            options = common_2.mixin(common_2.mixin({}, Draw.DEFAULT_OPTIONS), options);
+            options = common_2.mixin(common_2.mixin({}, Draw.DEFAULT_OPTIONS), options || {});
             return ol3_button_1.Button.create(options);
         };
         Draw.prototype.createInteraction = function () {
@@ -802,6 +1168,7 @@ define("ol3-draw/ol3-draw", ["require", "exports", "openlayers", "ol3-draw/ol3-b
             geometryName: "geom",
             label: "Draw",
             title: "Draw",
+            position: "top left",
             buttonType: Draw,
             eventName: "draw-feature",
             style: [
@@ -857,9 +1224,9 @@ define("tests/spec/input", ["require", "exports", "tests/base", "mocha", "ol3-dr
     });
     function checkDefaultInputOptions(options) {
         base_1.should(!!options, "options");
-        base_1.shouldEqual(options.className, "ol-input", "className");
+        base_1.shouldEqual(options.className, "ol-draw", "className");
         base_1.shouldEqual(options.map, undefined, "map");
-        base_1.shouldEqual(options.position, "bottom left", "position");
+        base_1.shouldEqual(options.position, "top left", "position");
     }
 });
 define("tests/index", ["require", "exports", "tests/spec/input"], function (require, exports) {

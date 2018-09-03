@@ -21,7 +21,7 @@ describe("Draw Tests", () => {
 
 function checkDefaultInputOptions(options: DrawControlOptions) {
     should(!!options, "options");
-    shouldEqual(options.className, "ol-input", "className");
+    shouldEqual(options.className, "ol-draw", "className");
     shouldEqual(options.map, undefined, "map");
-    shouldEqual(options.position, "bottom left", "position");
+    shouldEqual(options.position, "top left", "position");
 }

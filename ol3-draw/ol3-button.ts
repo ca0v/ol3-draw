@@ -25,7 +25,7 @@ export class Button extends ol.control.Control {
     }
 
     static create(options?: ButtonOptions) {
-        options = mixin(mixin({}, Button.DEFAULT_OPTIONS), options);
+        options = mixin(mixin({}, Button.DEFAULT_OPTIONS), options || {});
 
         options.element = options.element || document.createElement("DIV");
 
