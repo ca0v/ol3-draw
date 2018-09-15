@@ -3,7 +3,7 @@ import $ = require("jquery");
 
 import { cssin, getParameterByName } from "ol3-fun/index";
 import { Button, Delete, Draw, Modify, Translate, Select, Note, WfsSync } from "../index";
-import { MapMaker } from "./mapmaker";
+import { MapMaker } from "./extras/mapmaker";
 
 const GROUP_NAME = getParameterByName("GROUP_NAME") || "ol3-draw-examples";
 
@@ -98,7 +98,6 @@ function loadAndWatch(args: {
 
 export function run() {
   let map = MapMaker.create({
-    target: document.getElementsByClassName("map")[0],
     projection: WFS_INFO.srsName,
     center: <[number, number]>[-9167000, 4148000],
     zoom: 21,

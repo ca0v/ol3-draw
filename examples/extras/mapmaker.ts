@@ -2,17 +2,28 @@ import ol = require("openlayers");
 import { olx } from "openlayers";
 
 import { cssin, mixin } from "ol3-fun/index";
-import { Button, Draw } from "../index";
+import { Button, Draw } from "../../index";
 
 export class MapMaker {
   static DEFAULT_OPTIONS: olx.MapOptions = {};
   static create(options: {
-    target: Element;
+    target?: Element;
     center: [number, number];
     projection: string;
     zoom: number;
     basemap: string;
   }) {
+    if (!options.target) {
+      let target = document.getElementById("map");
+      if (!target) target = document.getElementsByClassName("map")[0] as HTMLElement;
+      if (!target) {
+        target = document.createElement("div");
+        target.id = target.className = "map";
+        document.body.appendChild(target);
+      }
+      options.target = target;
+    }
+
     options = mixin(mixin({}, MapMaker.DEFAULT_OPTIONS), options);
 
     options.target.classList.add("ol-map");
@@ -35,7 +46,12 @@ export class MapMaker {
 
     let osm = new ol.layer.Tile({
       opacity: 0.8,
-      source: new ol.source.OSM()
+      source: new ol.source.TileDebug({
+        projection: "EPSG:3857",
+        tileGrid: ol.tilegrid.createXYZ({
+          tileSize: 256
+        })
+      })
     });
 
     let view = new ol.View({

@@ -5,20 +5,21 @@
   "main": "index.js",
   "scripts": {
     "clean": "rm built/** -rf",
+    "update": "npm install ol3-fun ol3-symbolizer",
     "build-for-amd": "tsc -p tsconfig.json --outFile built/index.max.js",
     "build-for-examples": "tsc -p examples/tsconfig.json --outFile ./built/examples.max.js",
-    "live-for-examples": "live-server --port=5001 --wait=200 --watch=./built/examples.max.js --open=./loaders/examples.html --browser=CHROME",
-    "dev-for-examples": "npm run build-for-examples && start npm run live-for-examples && start npm run build-for-examples -- -w",
-    "examples": "npm run build-for-examples && npm run live-for-examples",
-    "build-for-tests": "tsc -p tests/tsconfig.json --outFile ./built/spec/index.js",
+    "live-for-tests": "live-server --port=5000 --wait=200 --watch=./built/*.max.js --open=\"./loaders/tests.html?theme=dark&debug=1\" --browser=CHROME",
+    "dev-for-examples": "npm run build-for-examples && start npm run live-for-tests && start npm run build-for-examples -- -w",
+    "examples": "npm run build-for-examples && npm run live-for-tests",
+    "build-for-tests": "tsc -p tests/tsconfig.json --outFile ./built/tests.max.js",
     "build-for-loaders": "tsc -p loaders/tsconfig.json --outDir ./built/loaders",
-    "live-for-tests": "live-server --port=5000 --wait=200 --watch=./built/spec/index.js --open=./loaders/tests.html --browser=CHROME",
-    "dev-for-tests": "npm run build-for-tests & start npm run live-for-tests & npm run build-for-tests -- -w",
+    "live-for-tests": "live-server --port=5000 --wait=200 --watch=./built/*.max.js --open=\"./loaders/tests.html?theme=dark&debug=1&test=*\" --browser=CHROME",
+    "dev-for-tests": "npm run build-for-tests && start npm run live-for-tests && npm run build-for-tests -- -w",
     "tests": "npm run dev-for-tests",
     "build": "npm run build-for-loaders && npm run build-for-amd && npm run build-for-tests && npm run build-for-examples",
     "install": "npm run build-for-amd",
-    "before-push": "npm run clean && npm run build && mv built/index.max.d.ts built/index.d.ts",
-    "test": "npm run before-push && npm run live-for-tests"
+    "before-push": "npm run clean && npm run build && mv built/index.max.d.ts built/index.d.ts && npm run live-for-tests",
+    "test": "npm run build-for-tests && npm run live-for-tests"
   },
   "repository": {
     "type": "git",
@@ -43,5 +44,7 @@
     "proj4": "^2.5.0",
     "typescript": "^3.0.3"
   },
-  "dependencies": {}
+  "dependencies": {
+    "jquery": "^3.3.1"
+  }
 }

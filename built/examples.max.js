@@ -21,12 +21,17 @@ define("node_modules/ol3-fun/ol3-fun/common", ["require", "exports"], function (
      * Adapted from http://stackoverflow.com/a/2117523/526860
      */
     function uuid() {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+            var r = (Math.random() * 16) | 0, v = c == "x" ? r : (r & 0x3) | 0x8;
             return v.toString(16);
         });
     }
     exports.uuid = uuid;
+    /**
+     * Converts a GetElementsBy* to a classic array
+     * @param list HTML collection to be converted to standard array
+     * @returns The @param list represented as a native array of elements
+     */
     function asArray(list) {
         var result = new Array(list.length);
         for (var i = 0; i < list.length; i++) {
@@ -47,7 +52,6 @@ define("node_modules/ol3-fun/ol3-fun/common", ["require", "exports"], function (
             e.classList.remove(className);
             return false;
         }
-        ;
         if (!exists && force !== false) {
             e.classList.add(className);
             return true;
@@ -55,6 +59,12 @@ define("node_modules/ol3-fun/ol3-fun/common", ["require", "exports"], function (
         return exists;
     }
     exports.toggle = toggle;
+    /**
+     * Converts a string representation of a value to it's desired type (e.g. parse("1", 0) returns 1)
+     * @param v string representation of desired return value
+     * @param type desired type
+     * @returns @param v converted to a @param type
+     */
     function parse(v, type) {
         if (typeof type === "string")
             return v;
@@ -63,12 +73,13 @@ define("node_modules/ol3-fun/ol3-fun/common", ["require", "exports"], function (
         if (typeof type === "boolean")
             return (v === "1" || v === "true");
         if (Array.isArray(type)) {
-            return (v.split(",").map(function (v) { return parse(v, type[0]); }));
+            return v.split(",").map(function (v) { return parse(v, type[0]); });
         }
         throw "unknown type: " + type;
     }
     exports.parse = parse;
     /**
+     * Replaces the options elements with the actual query string parameter values (e.g. {a: 0, "?a=10"} becomes {a: 10})
      * @param options Attributes on this object with be assigned the value of the matching parameter in the query string
      * @param url The url to scan
      */
@@ -85,8 +96,10 @@ define("node_modules/ol3-fun/ol3-fun/common", ["require", "exports"], function (
     }
     exports.getQueryParameters = getQueryParameters;
     /**
+     * Returns individual query string value from a url
      * @param name Extract parameter of this name from the query string
      * @param url Search this url
+     * @returns parameter value
      */
     function getParameterByName(name, url) {
         if (url === void 0) { url = window.location.href; }
@@ -95,11 +108,12 @@ define("node_modules/ol3-fun/ol3-fun/common", ["require", "exports"], function (
         if (!results)
             return null;
         if (!results[2])
-            return '';
+            return "";
         return decodeURIComponent(results[2].replace(/\+/g, " "));
     }
     exports.getParameterByName = getParameterByName;
     /**
+     * Only execute callback when @param v is truthy
      * @param v passing a non-trivial value will invoke the callback with this as the sole argument
      * @param cb callback to execute when the value is non-trivial (not null, not undefined)
      */
@@ -109,15 +123,23 @@ define("node_modules/ol3-fun/ol3-fun/common", ["require", "exports"], function (
     }
     exports.doif = doif;
     /**
+     * shallow copies b into a, replacing any existing values in a
      * @param a target
      * @param b values to shallow copy into target
      */
-    function mixin(a, b) {
-        Object.keys(b).forEach(function (k) { return a[k] = b[k]; });
+    function mixin(a) {
+        var b = [];
+        for (var _i = 1; _i < arguments.length; _i++) {
+            b[_i - 1] = arguments[_i];
+        }
+        b.forEach(function (b) {
+            Object.keys(b).forEach(function (k) { return (a[k] = b[k]); });
+        });
         return a;
     }
     exports.mixin = mixin;
     /**
+     * shallow copies b into a, preserving any existing values in a
      * @param a target
      * @param b values to copy into target if they are not already present
      */
@@ -127,11 +149,100 @@ define("node_modules/ol3-fun/ol3-fun/common", ["require", "exports"], function (
             b[_i - 1] = arguments[_i];
         }
         b.forEach(function (b) {
-            Object.keys(b).filter(function (k) { return a[k] === undefined; }).forEach(function (k) { return a[k] = b[k]; });
+            Object.keys(b)
+                .filter(function (k) { return a[k] === undefined; })
+                .forEach(function (k) { return (a[k] = b[k]); });
         });
         return a;
     }
     exports.defaults = defaults;
+    /**
+     * delay execution of a method
+     * @param func invoked after @param wait milliseconds
+     * @param immediate true to invoke @param func before waiting
+     */
+    function debounce(func, wait, immediate) {
+        if (wait === void 0) { wait = 50; }
+        if (immediate === void 0) { immediate = false; }
+        var timeout;
+        return (function () {
+            var args = [];
+            for (var _i = 0; _i < arguments.length; _i++) {
+                args[_i] = arguments[_i];
+            }
+            var later = function () {
+                timeout = null;
+                if (!immediate)
+                    func.apply({}, args);
+            };
+            var callNow = immediate && !timeout;
+            clearTimeout(timeout);
+            timeout = window.setTimeout(later, wait);
+            if (callNow)
+                func.apply({}, args);
+        });
+    }
+    exports.debounce = debounce;
+    /**
+     * poor $(html) substitute due to being
+     * unable to create <td>, <tr> elements
+     */
+    function html(html) {
+        var a = document.createElement("div");
+        a.innerHTML = html;
+        return (a.firstElementChild || a.firstChild);
+    }
+    exports.html = html;
+    /**
+     * returns all combinations of a1 with a2 (a1 X a2 pairs)
+     * @param a1 1xN matrix of first elements
+     * @param a2 1xN matrix of second elements
+     * @returns 2xN^2 matrix of a1 x a2 combinations
+     */
+    function pair(a1, a2) {
+        var result = new Array(a1.length * a2.length);
+        var i = 0;
+        a1.forEach(function (v1) { return a2.forEach(function (v2) { return (result[i++] = [v1, v2]); }); });
+        return result;
+    }
+    exports.pair = pair;
+    /**
+     * Returns an array [0..n)
+     * @param n number of elements
+     */
+    function range(n) {
+        var result = new Array(n);
+        for (var i = 0; i < n; i++)
+            result[i] = i;
+        return result;
+    }
+    exports.range = range;
+    /**
+     * in-place shuffling of an array
+     * @see http://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
+     * @param array array to randomize
+     */
+    function shuffle(array) {
+        var currentIndex = array.length;
+        var temporaryValue;
+        var randomIndex;
+        // While there remain elements to shuffle...
+        while (0 !== currentIndex) {
+            // Pick a remaining element...
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex -= 1;
+            // And swap it with the current element.
+            temporaryValue = array[currentIndex];
+            array[currentIndex] = array[randomIndex];
+            array[randomIndex] = temporaryValue;
+        }
+        return array;
+    }
+    exports.shuffle = shuffle;
+});
+define("node_modules/ol3-fun/ol3-fun/css", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
     /**
      * Adds exactly one instance of the CSS to the app with a mechanism
      * for disposing by invoking the destructor returned by this method.
@@ -166,70 +277,590 @@ define("node_modules/ol3-fun/ol3-fun/common", ["require", "exports"], function (
         };
     }
     exports.cssin = cssin;
-    function debounce(func, wait, immediate) {
-        if (wait === void 0) { wait = 50; }
-        if (immediate === void 0) { immediate = false; }
-        var timeout;
-        return (function () {
-            var args = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                args[_i] = arguments[_i];
-            }
-            var later = function () {
-                timeout = null;
-                if (!immediate)
-                    func.apply({}, args);
-            };
-            var callNow = immediate && !timeout;
-            clearTimeout(timeout);
-            timeout = window.setTimeout(later, wait);
-            if (callNow)
-                func.apply({}, args);
-        });
-    }
-    exports.debounce = debounce;
-    /**
-     * poor $(html) substitute due to being
-     * unable to create <td>, <tr> elements
-     */
-    function html(html) {
-        var a = document.createElement("div");
-        a.innerHTML = html;
-        return (a.firstElementChild || a.firstChild);
-    }
-    exports.html = html;
-    function pair(a1, a2) {
-        var result = new Array(a1.length * a2.length);
-        var i = 0;
-        a1.forEach(function (v1) { return a2.forEach(function (v2) { return result[i++] = [v1, v2]; }); });
-        return result;
-    }
-    exports.pair = pair;
-    function range(n) {
-        var result = new Array(n);
-        for (var i = 0; i < n; i++)
-            result[i] = i;
-        return result;
-    }
-    exports.range = range;
-    // http://stackoverflow.com/questions/2450954/how-to-randomize-shuffle-a-javascript-array
-    function shuffle(array) {
-        var currentIndex = array.length;
-        var temporaryValue;
-        var randomIndex;
-        // While there remain elements to shuffle...
-        while (0 !== currentIndex) {
-            // Pick a remaining element...
-            randomIndex = Math.floor(Math.random() * currentIndex);
-            currentIndex -= 1;
-            // And swap it with the current element.
-            temporaryValue = array[currentIndex];
-            array[currentIndex] = array[randomIndex];
-            array[randomIndex] = temporaryValue;
+    function loadCss(options) {
+        if (!options.url && !options.css)
+            throw "must provide either a url or css option";
+        if (options.url && options.css)
+            throw "cannot provide both a url and a css";
+        if (options.name && options.css)
+            return cssin(options.name, options.css);
+        var id = "style-" + options.name;
+        var head = document.getElementsByTagName("head")[0];
+        var link = document.getElementById(id);
+        if (!link) {
+            link = document.createElement("link");
+            link.id = id;
+            link.type = "text/css";
+            link.rel = "stylesheet";
+            link.href = options.url;
+            head.appendChild(link);
         }
-        return array;
+        var dataset = link.dataset;
+        dataset["count"] = parseInt(dataset["count"] || "0") + 1 + "";
+        return function () {
+            dataset["count"] = parseInt(dataset["count"] || "0") - 1 + "";
+            if (dataset["count"] === "0") {
+                link.remove();
+            }
+        };
     }
-    exports.shuffle = shuffle;
+    exports.loadCss = loadCss;
+});
+define("node_modules/ol3-fun/ol3-fun/navigation", ["require", "exports", "openlayers", "jquery", "node_modules/ol3-fun/ol3-fun/common"], function (require, exports, ol, $, common_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    /**
+     * A less disorienting way of changing the maps extent (maybe!)
+     * Zoom out until new feature is visible
+     * Zoom to that feature
+     * @param map The openlayers map
+     * @param feature The feature to zoom to
+     * @param options Animation constraints
+     */
+    function zoomToFeature(map, feature, options) {
+        var promise = $.Deferred();
+        options = common_1.defaults(options || {}, {
+            duration: 1000,
+            padding: 256,
+            minResolution: 2 * map.getView().getMinResolution()
+        });
+        var view = map.getView();
+        var currentExtent = view.calculateExtent(map.getSize());
+        var targetExtent = feature.getGeometry().getExtent();
+        var doit = function (duration) {
+            view.fit(targetExtent, {
+                size: map.getSize(),
+                padding: [options.padding, options.padding, options.padding, options.padding],
+                minResolution: options.minResolution,
+                duration: duration,
+                callback: function () { return promise.resolve(); }
+            });
+        };
+        if (ol.extent.containsExtent(currentExtent, targetExtent)) {
+            // new extent is contained within current extent, pan and zoom in
+            doit(options.duration);
+        }
+        else if (ol.extent.containsExtent(currentExtent, targetExtent)) {
+            // new extent is contained within current extent, pan and zoom out
+            doit(options.duration);
+        }
+        else {
+            // zoom out until target extent is in view
+            var fullExtent = ol.extent.createEmpty();
+            ol.extent.extend(fullExtent, currentExtent);
+            ol.extent.extend(fullExtent, targetExtent);
+            var dscale = ol.extent.getWidth(fullExtent) / ol.extent.getWidth(currentExtent);
+            var duration = 0.5 * options.duration;
+            view.fit(fullExtent, {
+                size: map.getSize(),
+                padding: [options.padding, options.padding, options.padding, options.padding],
+                minResolution: options.minResolution,
+                duration: duration
+            });
+            setTimeout(function () { return doit(0.5 * options.duration); }, duration);
+        }
+        return promise;
+    }
+    exports.zoomToFeature = zoomToFeature;
+});
+/**
+ * Converts DMS to lonlat
+ * ported from https://github.com/gmaclennan/parse-dms/blob/master/index.js
+ * and https://stackoverflow.com/questions/37893131/how-to-convert-lat-long-from-decimal-degrees-to-dms-format
+ */
+define("node_modules/ol3-fun/ol3-fun/parse-dms", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    function decDegFromMatch(m) {
+        var signIndex = {
+            "-": -1,
+            N: 1,
+            S: -1,
+            E: 1,
+            W: -1
+        };
+        var latLonIndex = {
+            "-": "",
+            N: "lat",
+            S: "lat",
+            E: "lon",
+            W: "lon"
+        };
+        var degrees, minutes, seconds, sign, latLon;
+        sign = signIndex[m[2]] || signIndex[m[1]] || signIndex[m[6]] || 1;
+        degrees = Number(m[3]);
+        minutes = m[4] ? Number(m[4]) : 0;
+        seconds = m[5] ? Number(m[5]) : 0;
+        latLon = latLonIndex[m[1]] || latLonIndex[m[6]];
+        if (!inRange(degrees, 0, 180))
+            throw "Degrees out of range";
+        if (!inRange(minutes, 0, 60))
+            throw "Minutes out of range";
+        if (!inRange(seconds, 0, 60))
+            throw "Seconds out of range";
+        return {
+            decDeg: sign * (degrees + minutes / 60 + seconds / 3600),
+            latLon: latLon
+        };
+    }
+    function inRange(value, a, b) {
+        return value >= a && value <= b;
+    }
+    function toDegreesMinutesAndSeconds(coordinate) {
+        var absolute = Math.abs(coordinate);
+        var degrees = Math.floor(absolute);
+        var minutesNotTruncated = (absolute - degrees) * 60;
+        var minutes = Math.floor(minutesNotTruncated);
+        var seconds = Math.floor((minutesNotTruncated - minutes) * 60);
+        return degrees + " " + minutes + " " + seconds;
+    }
+    function fromLonLatToDms(lon, lat) {
+        var latitude = toDegreesMinutesAndSeconds(lat);
+        var latitudeCardinal = lat >= 0 ? "N" : "S";
+        var longitude = toDegreesMinutesAndSeconds(lon);
+        var longitudeCardinal = lon >= 0 ? "E" : "W";
+        return latitude + " " + latitudeCardinal + " " + longitude + " " + longitudeCardinal;
+    }
+    function fromDmsToLonLat(dmsString) {
+        var _a;
+        dmsString = dmsString.trim();
+        // Inspired by https://gist.github.com/JeffJacobson/2955437
+        // See https://regex101.com/r/kS2zR1/3
+        var dmsRe = /([NSEW])?(-)?(\d+(?:\.\d+)?)[°º:d\s]?\s?(?:(\d+(?:\.\d+)?)['’‘′:]\s?(?:(\d{1,2}(?:\.\d+)?)(?:"|″|’’|'')?)?)?\s?([NSEW])?/i;
+        var dmsString2;
+        var m1 = dmsString.match(dmsRe);
+        if (!m1)
+            throw "Could not parse string";
+        // If dmsString starts with a hemisphere letter, then the regex can also capture the
+        // hemisphere letter for the second coordinate pair if also in the string
+        if (m1[1]) {
+            m1[6] = undefined;
+            dmsString2 = dmsString.substr(m1[0].length - 1).trim();
+        }
+        else {
+            dmsString2 = dmsString.substr(m1[0].length).trim();
+        }
+        var decDeg1 = decDegFromMatch(m1);
+        var m2 = dmsString2.match(dmsRe);
+        var decDeg2 = m2 && decDegFromMatch(m2);
+        if (typeof decDeg1.latLon === "undefined") {
+            if (!isNaN(decDeg1.decDeg) && decDeg2 && isNaN(decDeg2.decDeg)) {
+                // If we only have one coordinate but we have no hemisphere value,
+                // just return the decDeg number
+                return decDeg1.decDeg;
+            }
+            else if (!isNaN(decDeg1.decDeg) && decDeg2 && !isNaN(decDeg2.decDeg)) {
+                // If no hemisphere letter but we have two coordinates,
+                // infer that the first is lat, the second lon
+                decDeg1.latLon = "lat";
+                decDeg2.latLon = "lon";
+            }
+            else {
+                throw "Could not parse string";
+            }
+        }
+        // If we parsed the first coordinate as lat or lon, then assume the second is the other
+        if (typeof decDeg2.latLon === "undefined") {
+            decDeg2.latLon = decDeg1.latLon === "lat" ? "lon" : "lat";
+        }
+        return _a = {},
+            _a[decDeg1.latLon] = decDeg1.decDeg,
+            _a[decDeg2.latLon] = decDeg2.decDeg,
+            _a;
+    }
+    function parse(value) {
+        if (typeof value === "string")
+            return fromDmsToLonLat(value);
+        return fromLonLatToDms(value.lon, value.lat);
+    }
+    exports.parse = parse;
+});
+define("node_modules/ol3-fun/ol3-fun/slowloop", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    /**
+     * Executes a series of functions in a delayed manner
+     * @param functions one function executes per interval
+     * @param interval length of the interval in milliseconds
+     * @param cycles number of types to run each function
+     * @returns promise indicating the process is complete
+     */
+    function slowloop(functions, interval, cycles) {
+        if (interval === void 0) { interval = 1000; }
+        if (cycles === void 0) { cycles = 1; }
+        var d = $.Deferred();
+        var index = 0;
+        var cycle = 0;
+        if (!functions || 0 >= cycles) {
+            d.resolve();
+            return d;
+        }
+        var h = setInterval(function () {
+            if (index === functions.length) {
+                index = 0;
+                if (++cycle === cycles) {
+                    d.resolve();
+                    clearInterval(h);
+                    return;
+                }
+            }
+            try {
+                d.notify({ index: index, cycle: cycle });
+                functions[index++]();
+            }
+            catch (ex) {
+                clearInterval(h);
+                d.reject(ex);
+            }
+        }, interval);
+        return d;
+    }
+    exports.slowloop = slowloop;
+});
+define("node_modules/ol3-fun/ol3-fun/is-primitive", ["require", "exports"], function (require, exports) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    function isPrimitive(a) {
+        switch (typeof a) {
+            case "boolean":
+                return true;
+            case "number":
+                return true;
+            case "object":
+                return null === a;
+            case "string":
+                return true;
+            case "symbol":
+                return true;
+            case "undefined":
+                return true;
+            default:
+                throw "unknown type: " + typeof a;
+        }
+    }
+    exports.isPrimitive = isPrimitive;
+});
+define("node_modules/ol3-fun/ol3-fun/is-cyclic", ["require", "exports", "node_modules/ol3-fun/ol3-fun/is-primitive"], function (require, exports, is_primitive_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    /**
+     * Determine if an object refers back to itself
+     */
+    function isCyclic(a) {
+        if (is_primitive_1.isPrimitive(a))
+            return false;
+        var test = function (o, history) {
+            if (is_primitive_1.isPrimitive(o))
+                return false;
+            if (0 <= history.indexOf(o)) {
+                return true;
+            }
+            return Object.keys(o).some(function (k) { return test(o[k], [o].concat(history)); });
+        };
+        return Object.keys(a).some(function (k) { return test(a[k], [a]); });
+    }
+    exports.isCyclic = isCyclic;
+});
+// from https://github.com/unclechu/node-deep-extend/blob/master/lib/deep-extend.js
+define("node_modules/ol3-fun/ol3-fun/deep-extend", ["require", "exports", "node_modules/ol3-fun/ol3-fun/is-cyclic", "node_modules/ol3-fun/ol3-fun/is-primitive"], function (require, exports, is_cyclic_1, is_primitive_2) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    /**
+     * deep mixin, replacing items in a with items in b
+     * array items with an "id" are used to identify pairs, otherwise b overwrites a
+     * @param a object to extend
+     * @param b data to inject into the object
+     * @param trace optional change tracking
+     * @param history object added here are not visited
+     */
+    function extend(a, b, trace, history) {
+        if (history === void 0) { history = []; }
+        if (!b) {
+            b = a;
+            a = {};
+        }
+        var merger = new Merger(trace, history);
+        return merger.deepExtend(a, b, []);
+    }
+    exports.extend = extend;
+    function isUndefined(a) {
+        return typeof a === "undefined";
+    }
+    function isArray(val) {
+        return Array.isArray(val);
+    }
+    function isHash(val) {
+        return !is_primitive_2.isPrimitive(val) && !canClone(val) && !isArray(val);
+    }
+    function canClone(val) {
+        if (val instanceof Date)
+            return true;
+        if (val instanceof RegExp)
+            return true;
+        return false;
+    }
+    function clone(val) {
+        if (val instanceof Date)
+            return new Date(val.getTime());
+        if (val instanceof RegExp)
+            return new RegExp(val.source);
+        throw "unclonable type encounted: " + typeof val;
+    }
+    /**
+     * Hepler class for managing the trace
+     */
+    var Merger = /** @class */ (function () {
+        function Merger(traceItems, history) {
+            this.traceItems = traceItems;
+            this.history = history;
+        }
+        Merger.prototype.trace = function (item) {
+            if (this.traceItems) {
+                this.traceItems.push(item);
+            }
+            return item.path;
+        };
+        /**
+         * @param target Object to be extended
+         * @param source Object with values to be copied into target
+         * @returns extended object
+         */
+        Merger.prototype.deepExtend = function (target, source, path) {
+            var _this = this;
+            if (target === source)
+                return target; // nothing left to merge
+            if (!target || (!isHash(target) && !isArray(target))) {
+                throw "first argument must be an object";
+            }
+            if (!source || (!isHash(source) && !isArray(source))) {
+                throw "second argument must be an object";
+            }
+            /**
+             * ignore functions
+             */
+            if (typeof source === "function") {
+                return target;
+            }
+            /**
+             * only track objects that trigger a recursion
+             */
+            this.push(source);
+            /**
+             * copy arrays into array
+             */
+            if (isArray(source)) {
+                if (!isArray(target)) {
+                    throw "attempting to merge an array into a non-array";
+                }
+                this.mergeArray("id", target, source, path);
+                return target;
+            }
+            else if (isArray(target)) {
+                throw "attempting to merge a non-array into an array";
+            }
+            /**
+             * copy the values from source into the target
+             */
+            Object.keys(source).forEach(function (k) { return _this.mergeChild(k, target, source[k], [k].concat(path)); });
+            return target;
+        };
+        Merger.prototype.cloneArray = function (val, path) {
+            var _this = this;
+            this.push(val);
+            return val.map(function (v) {
+                if (is_primitive_2.isPrimitive(v))
+                    return v;
+                if (isHash(v))
+                    return _this.deepExtend({}, v, path);
+                if (isArray(v))
+                    return _this.cloneArray(v, path);
+                if (canClone(v))
+                    return clone(v);
+                throw "unknown type encountered: " + typeof v;
+            });
+        };
+        Merger.prototype.push = function (a) {
+            if (is_primitive_2.isPrimitive(a))
+                return;
+            if (-1 < this.history.indexOf(a)) {
+                if (is_cyclic_1.isCyclic(a)) {
+                    throw "circular reference detected";
+                }
+            }
+            else
+                this.history.push(a);
+        };
+        Merger.prototype.mergeChild = function (key, target, sourceValue, path) {
+            var targetValue = target[key];
+            /**
+             * nothing to do for this key
+             */
+            if (sourceValue === targetValue)
+                return;
+            /**
+             * if new value is primitive create/update the target value
+             */
+            if (is_primitive_2.isPrimitive(sourceValue)) {
+                // record change
+                path = this.trace({
+                    path: path,
+                    key: key,
+                    target: target,
+                    was: targetValue,
+                    value: sourceValue
+                });
+                target[key] = sourceValue;
+                return;
+            }
+            /**
+             * Maybe it's a pseudo-primitive that we can clone (Date or RegEx)
+             */
+            if (canClone(sourceValue)) {
+                sourceValue = clone(sourceValue);
+                // record change
+                path = this.trace({
+                    path: path,
+                    key: key,
+                    target: target,
+                    was: targetValue,
+                    value: sourceValue
+                });
+                target[key] = sourceValue;
+                return;
+            }
+            /**
+             * if new value is an array, merge with existing array or create a new property
+             */
+            if (isArray(sourceValue)) {
+                /**
+                 * we're dealing with objects (two arrays) that deepExtend understands
+                 */
+                if (isArray(targetValue)) {
+                    this.deepExtend(targetValue, sourceValue, path);
+                    return;
+                }
+                /**
+                 * create/update the target with the source array
+                 */
+                sourceValue = this.cloneArray(sourceValue, path);
+                path = this.trace({
+                    path: path,
+                    key: key,
+                    target: target,
+                    was: targetValue,
+                    value: sourceValue
+                });
+                target[key] = sourceValue;
+                return;
+            }
+            /**
+             * source is not primitive, not a clonable primitive and not an array
+             * so it must be an object with keys
+             */
+            if (!isHash(sourceValue)) {
+                throw "unexpected source type: " + typeof sourceValue;
+            }
+            /**
+             * if the target is not a hash object then create/update it
+             */
+            if (!isHash(targetValue)) {
+                // clone the source
+                var merger = new Merger(null, this.history);
+                sourceValue = merger.deepExtend({}, sourceValue, path);
+                path = this.trace({
+                    path: path,
+                    key: key,
+                    target: target,
+                    was: targetValue,
+                    value: sourceValue
+                });
+                target[key] = sourceValue;
+                return;
+            }
+            /**
+             * Both source and target are known by deepExtend...
+             */
+            this.deepExtend(targetValue, sourceValue, path);
+            return;
+        };
+        Merger.prototype.mergeArray = function (key, target, source, path) {
+            var _this = this;
+            // skip trivial arrays
+            if (!isArray(target))
+                throw "target must be an array";
+            if (!isArray(source))
+                throw "input must be an array";
+            if (!source.length)
+                return target;
+            // quickly find keyed targets
+            var hash = {};
+            target.forEach(function (item, i) {
+                if (!item[key])
+                    return;
+                hash[item[key]] = i;
+            });
+            source.forEach(function (sourceItem, i) {
+                var sourceKey = sourceItem[key];
+                var targetIndex = hash[sourceKey];
+                /**
+                 * No "id" so perform a naive update/create on the target
+                 */
+                if (isUndefined(sourceKey)) {
+                    if (isHash(target[i]) && !!target[i][key]) {
+                        throw "cannot replace an identified array item with a non-identified array item";
+                    }
+                    _this.mergeChild(i, target, sourceItem, path);
+                    return;
+                }
+                /**
+                 * not target so add it to the end of the array
+                 */
+                if (isUndefined(targetIndex)) {
+                    _this.mergeChild(target.length, target, sourceItem, path);
+                    return;
+                }
+                /**
+                 * The target item exists so need to merge the source item
+                 */
+                _this.mergeChild(targetIndex, target, sourceItem, path);
+                return;
+            });
+            return target;
+        };
+        return Merger;
+    }());
+});
+define("node_modules/ol3-fun/index", ["require", "exports", "node_modules/ol3-fun/ol3-fun/common", "node_modules/ol3-fun/ol3-fun/css", "node_modules/ol3-fun/ol3-fun/navigation", "node_modules/ol3-fun/ol3-fun/parse-dms", "node_modules/ol3-fun/ol3-fun/slowloop", "node_modules/ol3-fun/ol3-fun/deep-extend"], function (require, exports, common_2, css_1, navigation_1, parse_dms_1, slowloop_1, deep_extend_1) {
+    "use strict";
+    var index = {
+        asArray: common_2.asArray,
+        cssin: css_1.cssin,
+        loadCss: css_1.loadCss,
+        debounce: common_2.debounce,
+        defaults: common_2.defaults,
+        doif: common_2.doif,
+        deepExtend: deep_extend_1.extend,
+        getParameterByName: common_2.getParameterByName,
+        getQueryParameters: common_2.getQueryParameters,
+        html: common_2.html,
+        mixin: common_2.mixin,
+        pair: common_2.pair,
+        parse: common_2.parse,
+        range: common_2.range,
+        shuffle: common_2.shuffle,
+        toggle: common_2.toggle,
+        uuid: common_2.uuid,
+        slowloop: slowloop_1.slowloop,
+        dms: {
+            parse: parse_dms_1.parse,
+            fromDms: function (dms) { return parse_dms_1.parse(dms); },
+            fromLonLat: function (o) { return parse_dms_1.parse(o); }
+        },
+        navigation: {
+            zoomToFeature: navigation_1.zoomToFeature
+        }
+    };
+    return index;
 });
 define("node_modules/ol3-symbolizer/ol3-symbolizer/common/assign", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -263,30 +894,6 @@ define("node_modules/ol3-symbolizer/ol3-symbolizer/common/assign", ["require", "
         obj[prop] = value;
     }
     exports.assign = assign;
-});
-define("node_modules/ol3-symbolizer/ol3-symbolizer/common/mixin", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    /**
-     * Shallow copies source into target, already available in numerous libraries including ol3-fun so does not belong here
-     * This implementation always overwrites the target with the source values (_.default does not replace values)
-     * @param a target
-     * @param b source
-     */
-    function mixin(a, b) {
-        Object.keys(b).forEach(function (k) { return a[k] = b[k]; });
-        return a;
-    }
-    exports.mixin = mixin;
-});
-define("node_modules/ol3-symbolizer/ol3-symbolizer/common/doif", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    function doif(v, cb) {
-        if (v !== undefined && v !== null)
-            cb(v);
-    }
-    exports.doif = doif;
 });
 define("node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-cross", ["require", "exports"], function (require, exports) {
     "use strict";
@@ -647,7 +1254,7 @@ define("node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-x", ["requi
     }());
     exports.Shapeshifter = Shapeshifter;
 });
-define("node_modules/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer", ["require", "exports", "openlayers", "node_modules/ol3-symbolizer/ol3-symbolizer/common/assign", "node_modules/ol3-symbolizer/ol3-symbolizer/common/mixin", "node_modules/ol3-symbolizer/ol3-symbolizer/common/doif", "node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-cross", "node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-square", "node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-diamond", "node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-triangle", "node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-x"], function (require, exports, ol, assign_1, mixin_1, doif_1, as_cross_1, as_square_1, as_diamond_1, as_triangle_1, as_x_1) {
+define("node_modules/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer", ["require", "exports", "openlayers", "node_modules/ol3-symbolizer/ol3-symbolizer/common/assign", "node_modules/ol3-fun/index", "node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-cross", "node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-square", "node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-diamond", "node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-triangle", "node_modules/ol3-symbolizer/ol3-symbolizer/format/plugins/as-x"], function (require, exports, ol, assign_1, index_1, as_cross_1, as_square_1, as_diamond_1, as_triangle_1, as_x_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var StyleConverter = /** @class */ (function () {
@@ -692,7 +1299,7 @@ define("node_modules/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer", ["req
             if (typeof style === "number")
                 throw style;
             if (style.getColor)
-                mixin_1.mixin(s, this.serializeColor(style.getColor()));
+                index_1.mixin(s, this.serializeColor(style.getColor()));
             if (style.getImage)
                 assign_1.assign(s, "image", this.serializeImage(style.getImage()));
             if (style.getFill)
@@ -873,8 +1480,8 @@ define("node_modules/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer", ["req
                 fill: json.fill && this.deserializeFill(json.fill),
                 stroke: json.stroke && this.deserializeStroke(json.stroke)
             });
-            doif_1.doif(json.rotation, function (v) { return image.setRotation(v); });
-            doif_1.doif(json.opacity, function (v) { return image.setOpacity(v); });
+            index_1.doif(json.rotation, function (v) { return image.setRotation(v); });
+            index_1.doif(json.opacity, function (v) { return image.setOpacity(v); });
             return image;
         };
         StyleConverter.prototype.deserializeIcon = function (json) {
@@ -970,7 +1577,7 @@ define("node_modules/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer", ["req
                 size: [canvas.width, canvas.height],
                 src: undefined
             });
-            return mixin_1.mixin(icon, {
+            return index_1.mixin(icon, {
                 path: json.path,
                 stroke: json.stroke,
                 fill: json.fill,
@@ -986,12 +1593,12 @@ define("node_modules/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer", ["req
         };
         StyleConverter.prototype.deserializeStroke = function (json) {
             var stroke = new ol.style.Stroke();
-            doif_1.doif(json.color, function (v) { return stroke.setColor(v); });
-            doif_1.doif(json.lineCap, function (v) { return stroke.setLineCap(v); });
-            doif_1.doif(json.lineDash, function (v) { return stroke.setLineDash(v); });
-            doif_1.doif(json.lineJoin, function (v) { return stroke.setLineJoin(v); });
-            doif_1.doif(json.miterLimit, function (v) { return stroke.setMiterLimit(v); });
-            doif_1.doif(json.width, function (v) { return stroke.setWidth(v); });
+            index_1.doif(json.color, function (v) { return stroke.setColor(v); });
+            index_1.doif(json.lineCap, function (v) { return stroke.setLineCap(v); });
+            index_1.doif(json.lineDash, function (v) { return stroke.setLineDash(v); });
+            index_1.doif(json.lineJoin, function (v) { return stroke.setLineJoin(v); });
+            index_1.doif(json.miterLimit, function (v) { return stroke.setMiterLimit(v); });
+            index_1.doif(json.width, function (v) { return stroke.setWidth(v); });
             return stroke;
         };
         StyleConverter.prototype.deserializeColor = function (fill) {
@@ -1010,7 +1617,7 @@ define("node_modules/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer", ["req
                 }
                 if (fill.gradient.stops) {
                     // preserve
-                    mixin_1.mixin(gradient_1, {
+                    index_1.mixin(gradient_1, {
                         stops: fill.gradient.stops
                     });
                     var stops = fill.gradient.stops.split(";");
@@ -1063,7 +1670,7 @@ define("node_modules/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer", ["req
                         }
                         break;
                 }
-                return mixin_1.mixin(context_1.createPattern(canvas, repitition), fill.pattern);
+                return index_1.mixin(context_1.createPattern(canvas, repitition), fill.pattern);
             }
             if (fill.image) {
                 var canvas = document.createElement('canvas');
@@ -1086,7 +1693,7 @@ define("node_modules/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer", ["req
             canvas.height = Math.max(y0, y1);
             var context = canvas.getContext('2d');
             var gradient = context.createLinearGradient(x0, y0, x1, y1);
-            mixin_1.mixin(gradient, {
+            index_1.mixin(gradient, {
                 type: "linear(" + [x0, y0, x1, y1].join(",") + ")"
             });
             return gradient;
@@ -1100,7 +1707,7 @@ define("node_modules/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer", ["req
             canvas.height = 2 * Math.max(y0, y1);
             var context = canvas.getContext('2d');
             var gradient = context.createRadialGradient(x0, y0, r0, x1, y1, r1);
-            mixin_1.mixin(gradient, {
+            index_1.mixin(gradient, {
                 type: "radial(" + [x0, y0, r0, x1, y1, r1].join(",") + ")"
             });
             return gradient;
@@ -1109,7 +1716,7 @@ define("node_modules/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer", ["req
     }());
     exports.StyleConverter = StyleConverter;
 });
-define("ol3-draw/ol3-button", ["require", "exports", "openlayers", "node_modules/ol3-fun/ol3-fun/common", "node_modules/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer"], function (require, exports, ol, common_1, ol3_symbolizer_1) {
+define("ol3-draw/ol3-button", ["require", "exports", "openlayers", "node_modules/ol3-fun/index", "node_modules/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer"], function (require, exports, ol, index_2, ol3_symbolizer_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var Button = /** @class */ (function (_super) {
@@ -1121,7 +1728,7 @@ define("ol3-draw/ol3-button", ["require", "exports", "openlayers", "node_modules
             _this.symbolizer = new ol3_symbolizer_1.StyleConverter();
             _this.cssin();
             options.element.className = options.className + " " + options.position;
-            var button = common_1.html("<input type=\"button\" value=\"" + options.label + "\" />");
+            var button = index_2.html("<input type=\"button\" value=\"" + options.label + "\" />");
             _this.handlers.push(function () { return options.element.remove(); });
             button.title = options.title;
             options.element.appendChild(button);
@@ -1140,9 +1747,9 @@ define("ol3-draw/ol3-button", ["require", "exports", "openlayers", "node_modules
             return _this;
         }
         Button.create = function (options) {
-            options = common_1.mixin(common_1.mixin({}, Button.DEFAULT_OPTIONS), options || {});
+            options = index_2.mixin(index_2.mixin({}, Button.DEFAULT_OPTIONS), options || {});
             options.element = options.element || document.createElement("DIV");
-            var button = new (options.buttonType)(options);
+            var button = new options.buttonType(options);
             if (options.map) {
                 options.map.addControl(button);
             }
@@ -1150,10 +1757,8 @@ define("ol3-draw/ol3-button", ["require", "exports", "openlayers", "node_modules
         };
         Button.prototype.setPosition = function (position) {
             var _this = this;
-            this.options.position.split(' ')
-                .forEach(function (k) { return _this.options.element.classList.remove(k); });
-            position.split(' ')
-                .forEach(function (k) { return _this.options.element.classList.add(k); });
+            this.options.position.split(" ").forEach(function (k) { return _this.options.element.classList.remove(k); });
+            position.split(" ").forEach(function (k) { return _this.options.element.classList.add(k); });
             this.options.position = position;
         };
         Button.prototype.destroy = function () {
@@ -1162,9 +1767,8 @@ define("ol3-draw/ol3-button", ["require", "exports", "openlayers", "node_modules
         };
         Button.prototype.cssin = function () {
             var className = this.options.className;
-            var positions = common_1.pair("top left right bottom".split(" "), common_1.range(24))
-                .map(function (pos) { return "." + className + "." + (pos[0] + (-pos[1] || '')) + " { " + pos[0] + ":" + (0.5 + pos[1]) + "em; }"; });
-            this.handlers.push(common_1.cssin(className, "\n            ." + className + " {\n                position: absolute;\n                background-color: rgba(255,255,255,.4);\n            }\n            ." + className + ".active {\n                background-color: white;\n            }\n            ." + className + ":hover {\n                background-color: white;\n            }\n            ." + className + " input[type=\"button\"] {\n                color: rgba(0,60,136,1);\n                background: transparent;\n                border: none;\n                width: 2em;\n                height: 2em;\n            }\n            " + positions.join('\n') + "\n        "));
+            var positions = index_2.pair("top left right bottom".split(" "), index_2.range(24)).map(function (pos) { return "." + className + "." + (pos[0] + (-pos[1] || "")) + " { " + pos[0] + ":" + (0.5 + pos[1]) + "em; }"; });
+            this.handlers.push(index_2.cssin(className, "\n            ." + className + " {\n                position: absolute;\n                background-color: rgba(255,255,255,.4);\n            }\n            ." + className + ".active {\n                background-color: white;\n            }\n            ." + className + ":hover {\n                background-color: white;\n            }\n            ." + className + " input[type=\"button\"] {\n                color: rgba(0,60,136,1);\n                background: transparent;\n                border: none;\n                width: 2em;\n                height: 2em;\n            }\n            " + positions.join("\n") + "\n        "));
         };
         Button.prototype.setMap = function (map) {
             var options = this.options;
@@ -1187,12 +1791,359 @@ define("ol3-draw/ol3-button", ["require", "exports", "openlayers", "node_modules
     }(ol.control.Control));
     exports.Button = Button;
 });
-define("node_modules/ol3-symbolizer/index", ["require", "exports", "node_modules/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer"], function (require, exports, Symbolizer) {
+define("node_modules/ol3-symbolizer/ol3-symbolizer/format/ags-symbolizer", ["require", "exports", "node_modules/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer"], function (require, exports, Symbolizer) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    var symbolizer = new Symbolizer.StyleConverter();
+    // esri -> ol mappings (add keyof to get proper definitions, not sure how)
+    // function agsStyleMapper(index : keyof(StyleTypes)) {
+    // }
+    var styleMap = {
+        esriSMSCircle: "circle",
+        esriSMSDiamond: "diamond",
+        esriSMSX: "x",
+        esriSMSCross: "cross",
+        esriSLSSolid: "solid",
+        esriSFSSolid: "solid",
+        esriSLSDot: "dot",
+        esriSLSDash: "dash",
+        esriSLSDashDot: "dashdot",
+        esriSLSDashDotDot: "dashdotdot",
+        esriSFSBackwardDiagonal: "backward-diagonal",
+        esriSFSForwardDiagonal: "forward-diagonal"
+    };
+    // esri -> ol mappings
+    var typeMap = {
+        esriSMS: "sms",
+        esriSLS: "sls",
+        esriSFS: "sfs",
+        esriPMS: "pms",
+        esriPFS: "pfs",
+        esriTS: "txt" // text symbol
+    };
+    function range(a, b) {
+        var result = new Array(b - a + 1);
+        while (a <= b)
+            result.push(a++);
+        return result;
+    }
+    function clone(o) {
+        return JSON.parse(JSON.stringify(o));
+    }
+    // convert from ags style to an internal format
+    var StyleConverter = /** @class */ (function () {
+        function StyleConverter() {
+        }
+        StyleConverter.prototype.asWidth = function (v) {
+            return (v * 4) / 3; // not sure why
+        };
+        // see ol.color.asString
+        StyleConverter.prototype.asColor = function (color) {
+            if (color.length === 4)
+                return "rgba(" + color[0] + "," + color[1] + "," + color[2] + "," + color[3] / 255 + ")";
+            if (color.length === 3)
+                return "rgb(" + color[0] + "," + color[1] + "," + color[2] + "})";
+            return "#" + color.map(function (v) { return ("0" + v.toString(16)).substr(0, 2); }).join("");
+        };
+        StyleConverter.prototype.fromSFSSolid = function (symbol, style) {
+            style.fill = {
+                color: this.asColor(symbol.color)
+            };
+            this.fromSLS(symbol.outline, style);
+        };
+        StyleConverter.prototype.fromSFSForwardDiagonal = function (symbol, style) {
+            style.fill = {
+                pattern: {
+                    color: this.asColor(symbol.color),
+                    orientation: "forward",
+                    spacing: 3,
+                    repitition: "repeat"
+                }
+            };
+            this.fromSLS(symbol.outline, style);
+        };
+        StyleConverter.prototype.fromSFSBackwardDiagonal = function (symbol, style) {
+            style.fill = {
+                pattern: {
+                    color: this.asColor(symbol.color),
+                    orientation: "backward",
+                    spacing: 3,
+                    repitition: "repeat"
+                }
+            };
+            this.fromSLS(symbol.outline, style);
+        };
+        StyleConverter.prototype.fromSFS = function (symbol, style) {
+            switch (symbol.style) {
+                case "esriSFSSolid":
+                    this.fromSFSSolid(symbol, style);
+                    break;
+                case "esriSFSForwardDiagonal":
+                    this.fromSFSForwardDiagonal(symbol, style);
+                    break;
+                case "esriSFSBackwardDiagonal":
+                    this.fromSFSBackwardDiagonal(symbol, style);
+                    break;
+                default:
+                    throw "invalid-style: " + symbol.style;
+            }
+        };
+        StyleConverter.prototype.fromSMSCircle = function (symbol, style) {
+            style.circle = {
+                opacity: 1,
+                radius: this.asWidth(symbol.size / 2),
+                stroke: {
+                    color: this.asColor(symbol.outline.color)
+                },
+                snapToPixel: true
+            };
+            this.fromSFSSolid(symbol, style.circle);
+            this.fromSLS(symbol.outline, style.circle);
+        };
+        StyleConverter.prototype.fromSMSCross = function (symbol, style) {
+            style.star = {
+                points: 4,
+                angle: 0,
+                radius: this.asWidth(symbol.size / Math.sqrt(2)),
+                radius2: 0
+            };
+            this.fromSFSSolid(symbol, style.star);
+            this.fromSLS(symbol.outline, style.star);
+        };
+        StyleConverter.prototype.fromSMSDiamond = function (symbol, style) {
+            style.star = {
+                points: 4,
+                angle: 0,
+                radius: this.asWidth(symbol.size / Math.sqrt(2)),
+                radius2: this.asWidth(symbol.size / Math.sqrt(2))
+            };
+            this.fromSFSSolid(symbol, style.star);
+            this.fromSLS(symbol.outline, style.star);
+        };
+        StyleConverter.prototype.fromSMSPath = function (symbol, style) {
+            var size = 2 * this.asWidth(symbol.size);
+            style.svg = {
+                imgSize: [size, size],
+                path: symbol.path,
+                rotation: symbol.angle
+            };
+            this.fromSLSSolid(symbol, style.svg);
+            this.fromSLS(symbol.outline, style.svg);
+        };
+        StyleConverter.prototype.fromSMSSquare = function (symbol, style) {
+            style.star = {
+                points: 4,
+                angle: Math.PI / 4,
+                radius: this.asWidth(symbol.size / Math.sqrt(2)),
+                radius2: this.asWidth(symbol.size / Math.sqrt(2))
+            };
+            this.fromSFSSolid(symbol, style.star);
+            this.fromSLS(symbol.outline, style.star);
+        };
+        StyleConverter.prototype.fromSMSX = function (symbol, style) {
+            style.star = {
+                points: 4,
+                angle: Math.PI / 4,
+                radius: this.asWidth(symbol.size / Math.sqrt(2)),
+                radius2: 0
+            };
+            this.fromSFSSolid(symbol, style.star);
+            this.fromSLS(symbol.outline, style.star);
+        };
+        StyleConverter.prototype.fromSMS = function (symbol, style) {
+            switch (symbol.style) {
+                case "esriSMSCircle":
+                    this.fromSMSCircle(symbol, style);
+                    break;
+                case "esriSMSCross":
+                    this.fromSMSCross(symbol, style);
+                    break;
+                case "esriSMSDiamond":
+                    this.fromSMSDiamond(symbol, style);
+                    break;
+                case "esriSMSPath":
+                    this.fromSMSPath(symbol, style);
+                    break;
+                case "esriSMSSquare":
+                    this.fromSMSSquare(symbol, style);
+                    break;
+                case "esriSMSX":
+                    this.fromSMSX(symbol, style);
+                    break;
+                default:
+                    throw "invalid-style: " + symbol.style;
+            }
+        };
+        StyleConverter.prototype.fromPMS = function (symbol, style) {
+            style.image = {};
+            style.image.src = symbol.url;
+            if (symbol.imageData) {
+                style.image.src = "data:image/png;base64," + symbol.imageData;
+            }
+            style.image["anchor-x"] = this.asWidth(symbol.xoffset);
+            style.image["anchor-y"] = this.asWidth(symbol.yoffset);
+            style.image.imgSize = [this.asWidth(symbol.width), this.asWidth(symbol.height)];
+        };
+        StyleConverter.prototype.fromSLSSolid = function (symbol, style) {
+            style.stroke = {
+                color: this.asColor(symbol.color),
+                width: this.asWidth(symbol.width),
+                lineDash: [],
+                lineJoin: "",
+                miterLimit: 4
+            };
+        };
+        StyleConverter.prototype.fromSLS = function (symbol, style) {
+            switch (symbol.style) {
+                case "esriSLSSolid":
+                    this.fromSLSSolid(symbol, style);
+                    break;
+                case "esriSLSDot":
+                    this.fromSLSSolid(symbol, style);
+                    break;
+                case "esriSLSDash":
+                    this.fromSLSSolid(symbol, style);
+                    break;
+                case "esriSLSDashDot":
+                    this.fromSLSSolid(symbol, style);
+                    break;
+                case "esriSLSDashDotDot":
+                    this.fromSLSSolid(symbol, style);
+                    break;
+                default:
+                    this.fromSLSSolid(symbol, style);
+                    console.warn("invalid-style: " + symbol.style);
+                    break;
+            }
+        };
+        // picture fill symbol (does not render the picture due to drawPolygon limitation)
+        StyleConverter.prototype.fromPFS = function (symbol, style) {
+            // TODO drawPolygon does not call setImageStyle so this is being ignored
+            style.fill = {
+                image: {
+                    src: symbol.url,
+                    imageData: symbol.imageData && "data:image/png;base64," + symbol.imageData,
+                    "anchor-x": this.asWidth(symbol.xoffset),
+                    "anchor-y": this.asWidth(symbol.yoffset),
+                    imgSize: [this.asWidth(symbol.width), this.asWidth(symbol.height)]
+                }
+            };
+            this.fromSLS(symbol.outline, style);
+        };
+        StyleConverter.prototype.fromTS = function (symbol, style) {
+            throw "not-implemented";
+        };
+        /**
+         * Converts the ags symbol to an openlayers style, then the openlayers style to a JSON representation
+         */
+        StyleConverter.prototype.fromJson = function (symbol) {
+            var style = {};
+            this.fromSymbol(symbol, style);
+            return symbolizer.fromJson(style);
+        };
+        StyleConverter.prototype.fromSymbol = function (symbol, style) {
+            switch (symbol.type) {
+                case "esriSFS":
+                    this.fromSFS(symbol, style);
+                    break;
+                case "esriSLS":
+                    this.fromSLS(symbol, style);
+                    break;
+                case "esriPMS":
+                    this.fromPMS(symbol, style);
+                    break;
+                case "esriPFS":
+                    this.fromPFS(symbol, style);
+                    break;
+                case "esriSMS":
+                    this.fromSMS(symbol, style);
+                    break;
+                case "esriTS":
+                    this.fromTS(symbol, style);
+                    break;
+                default:
+                    throw "invalid-symbol-type: " + symbol.type;
+            }
+        };
+        /**
+         * convert drawing info into a symbology rule
+         */
+        StyleConverter.prototype.fromRenderer = function (renderer, args) {
+            var _this = this;
+            switch (renderer.type) {
+                case "simple": {
+                    return this.fromJson(renderer.symbol);
+                }
+                case "uniqueValue": {
+                    var styles_1 = {};
+                    var defaultStyle_1 = renderer.defaultSymbol && this.fromJson(renderer.defaultSymbol);
+                    if (renderer.uniqueValueInfos) {
+                        renderer.uniqueValueInfos.forEach(function (info) {
+                            styles_1[info.value] = _this.fromJson(info.symbol);
+                        });
+                    }
+                    return function (feature) { return styles_1[feature.get(renderer.field1)] || defaultStyle_1; };
+                }
+                case "classBreaks": {
+                    var styles_2 = {};
+                    var classBreakRenderer_1 = renderer;
+                    if (classBreakRenderer_1.classBreakInfos) {
+                        console.log("processing classBreakInfos");
+                        if (classBreakRenderer_1.visualVariables) {
+                            classBreakRenderer_1.visualVariables.forEach(function (vars) {
+                                switch (vars.type) {
+                                    /**
+                                     * This renderer adjusts the size of the symbol to between [minSize..maxSize]
+                                     * based on the range of values [minDataValue, maxDataValue]
+                                     */
+                                    case "sizeInfo": {
+                                        var steps_1 = range(classBreakRenderer_1.authoringInfo.visualVariables[0].minSliderValue, classBreakRenderer_1.authoringInfo.visualVariables[0].maxSliderValue);
+                                        var dx_1 = (vars.maxSize - vars.minSize) / steps_1.length;
+                                        var dataValue_1 = (vars.maxDataValue - vars.minDataValue) / steps_1.length;
+                                        classBreakRenderer_1.classBreakInfos.forEach(function (classBreakInfo) {
+                                            var icons = steps_1.map(function (step) {
+                                                var json = (JSON.parse(JSON.stringify(classBreakInfo.symbol)));
+                                                json.size = vars.minSize + dx_1 * (dataValue_1 - vars.minDataValue);
+                                                var style = _this.fromJson(json);
+                                                styles_2[dataValue_1] = style;
+                                            });
+                                        });
+                                        debugger;
+                                        break;
+                                    }
+                                    default:
+                                        debugger;
+                                        break;
+                                }
+                            });
+                        }
+                    }
+                    return function (feature) {
+                        debugger;
+                        var value = feature.get(renderer.field1);
+                        for (var key in styles_2) {
+                            // TODO: scan until key > value, return prior style
+                            return styles_2[key];
+                        }
+                        return null;
+                    };
+                }
+                default:
+                    throw "unsupported renderer type: " + renderer.type;
+            }
+        };
+        return StyleConverter;
+    }());
+    exports.StyleConverter = StyleConverter;
+});
+define("node_modules/ol3-symbolizer/index", ["require", "exports", "node_modules/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer", "node_modules/ol3-symbolizer/ol3-symbolizer/format/ags-symbolizer", "node_modules/ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer"], function (require, exports, Symbolizer, ags_symbolizer_1, ol3_symbolizer_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.Symbolizer = Symbolizer;
+    exports.AgsStyleConverter = ags_symbolizer_1.StyleConverter;
+    exports.StyleConverter = ol3_symbolizer_2.StyleConverter;
 });
-define("ol3-draw/ol3-draw", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "node_modules/ol3-fun/ol3-fun/common"], function (require, exports, ol, ol3_button_1, common_2) {
+define("ol3-draw/ol3-draw", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "node_modules/ol3-fun/index"], function (require, exports, ol, ol3_button_1, index_3) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var Draw = /** @class */ (function (_super) {
@@ -1200,11 +2151,13 @@ define("ol3-draw/ol3-draw", ["require", "exports", "openlayers", "ol3-draw/ol3-b
         function Draw(options) {
             var _this = _super.call(this, options) || this;
             _this.interactions = {};
-            _this.handlers.push(function () { return Object.keys(_this.interactions).forEach(function (k) {
-                var interaction = _this.interactions[k];
-                interaction.setActive(false);
-                options.map.removeInteraction(interaction);
-            }); });
+            _this.handlers.push(function () {
+                return Object.keys(_this.interactions).forEach(function (k) {
+                    var interaction = _this.interactions[k];
+                    interaction.setActive(false);
+                    options.map.removeInteraction(interaction);
+                });
+            });
             _this.on("change:active", function () {
                 var active = _this.get("active");
                 var interaction = _this.interactions[options.geometryType];
@@ -1230,7 +2183,7 @@ define("ol3-draw/ol3-draw", ["require", "exports", "openlayers", "ol3-draw/ol3-b
             return _this;
         }
         Draw.create = function (options) {
-            options = common_2.mixin(common_2.mixin({}, Draw.DEFAULT_OPTIONS), options || {});
+            options = index_3.mixin(index_3.mixin({}, Draw.DEFAULT_OPTIONS), options || {});
             return ol3_button_1.Button.create(options);
         };
         Draw.prototype.createInteraction = function () {
@@ -1248,9 +2201,7 @@ define("ol3-draw/ol3-draw", ["require", "exports", "openlayers", "ol3-draw/ol3-b
             ["drawstart", "drawend"].forEach(function (eventName) {
                 draw.on(eventName, function (args) { return _this.dispatchEvent(args); });
             });
-            draw.on("change:active", function () {
-                return _this.options.element.classList.toggle("active", draw.getActive());
-            });
+            draw.on("change:active", function () { return _this.options.element.classList.toggle("active", draw.getActive()); });
             options.map.addInteraction(draw);
             return draw;
         };
@@ -1298,7 +2249,7 @@ define("ol3-draw/ol3-draw", ["require", "exports", "openlayers", "ol3-draw/ol3-b
     }(ol3_button_1.Button));
     exports.Draw = Draw;
 });
-define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "node_modules/ol3-fun/ol3-fun/common"], function (require, exports, ol, ol3_button_2, common_3) {
+define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "node_modules/ol3-fun/index"], function (require, exports, ol, ol3_button_2, index_4) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var Delete = /** @class */ (function (_super) {
@@ -1307,49 +2258,58 @@ define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3
             var _this = _super.call(this, options) || this;
             var map = options.map;
             var featureLayers = [];
-            var selection = options.selection = options.selection || new ol.interaction.Select({
-                condition: ol.events.condition.click,
-                multi: false,
-                style: function (feature, res) {
-                    var index = selection.getFeatures().getArray().indexOf(feature);
-                    var fillColor = "rgba(0,0,0,0.2)";
-                    var strokeColor = "red";
-                    var textTemplate = {
-                        text: "X" + (index + 1),
-                        fill: {
-                            color: strokeColor
-                        },
-                        stroke: {
-                            color: fillColor,
-                            width: 2
-                        },
-                        scale: 3
-                    };
-                    var style = options.style[feature.getGeometry().getType()]
-                        .map(function (s) { return _this.symbolizer.fromJson(common_3.defaults({ text: textTemplate }, s)); });
-                    return style;
-                }
-            });
+            var selection = (options.selection =
+                options.selection ||
+                    new ol.interaction.Select({
+                        condition: ol.events.condition.click,
+                        multi: false,
+                        style: function (feature, res) {
+                            var index = selection
+                                .getFeatures()
+                                .getArray()
+                                .indexOf(feature);
+                            var fillColor = "rgba(0,0,0,0.2)";
+                            var strokeColor = "red";
+                            var textTemplate = {
+                                text: "X" + (index + 1),
+                                fill: {
+                                    color: strokeColor
+                                },
+                                stroke: {
+                                    color: fillColor,
+                                    width: 2
+                                },
+                                scale: 3
+                            };
+                            var style = options.style[feature.getGeometry().getType()].map(function (s) {
+                                return _this.symbolizer.fromJson(index_4.defaults({ text: textTemplate }, s));
+                            });
+                            return style;
+                        }
+                    }));
             var boxSelect = new ol.interaction.DragBox({
                 condition: options.boxSelectCondition
             });
             boxSelect.on("boxend", function (args) {
                 var extent = boxSelect.getGeometry().getExtent();
                 var features = selection.getFeatures().getArray();
-                options.map.getLayers()
+                options.map
+                    .getLayers()
                     .getArray()
                     .filter(function (l) { return l instanceof ol.layer.Vector; })
                     .map(function (l) { return l; })
-                    .forEach(function (l) { return l.getSource().forEachFeatureIntersectingExtent(extent, function (feature) {
-                    if (-1 === features.indexOf(feature)) {
-                        selection.getFeatures().push(feature);
-                        _this.addFeatureLayerAssociation(feature, l);
-                    }
-                    else {
-                        selection.getFeatures().remove(feature);
-                        _this.addFeatureLayerAssociation(feature, null);
-                    }
-                }); });
+                    .forEach(function (l) {
+                    return l.getSource().forEachFeatureIntersectingExtent(extent, function (feature) {
+                        if (-1 === features.indexOf(feature)) {
+                            selection.getFeatures().push(feature);
+                            _this.addFeatureLayerAssociation(feature, l);
+                        }
+                        else {
+                            selection.getFeatures().remove(feature);
+                            _this.addFeatureLayerAssociation(feature, null);
+                        }
+                    });
+                });
             });
             _this.once("change:active", function () {
                 [selection, boxSelect].forEach(function (i) {
@@ -1370,7 +2330,7 @@ define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3
             return _this;
         }
         Delete.create = function (options) {
-            options = common_3.defaults({}, options, Delete.DEFAULT_OPTIONS);
+            options = index_4.defaults({}, options, Delete.DEFAULT_OPTIONS);
             return ol3_button_2.Button.create(options);
         };
         Delete.prototype.addFeatureLayerAssociation = function (feature, layer) {
@@ -1402,7 +2362,8 @@ define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3
             eventName: "delete-feature",
             boxSelectCondition: ol.events.condition.shiftKeyOnly,
             style: {
-                "Point": [{
+                Point: [
+                    {
                         circle: {
                             radius: 20,
                             fill: {
@@ -1414,14 +2375,18 @@ define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3
                             },
                             opacity: 1
                         }
-                    }],
-                "MultiLineString": [{
+                    }
+                ],
+                MultiLineString: [
+                    {
                         stroke: {
                             color: "red",
                             width: 2
                         }
-                    }],
-                "Circle": [{
+                    }
+                ],
+                Circle: [
+                    {
                         fill: {
                             color: "blue"
                         },
@@ -1429,8 +2394,10 @@ define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3
                             color: "red",
                             width: 2
                         }
-                    }],
-                "Polygon": [{
+                    }
+                ],
+                Polygon: [
+                    {
                         fill: {
                             color: "blue"
                         },
@@ -1438,8 +2405,10 @@ define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3
                             color: "red",
                             width: 2
                         }
-                    }],
-                "MultiPolygon": [{
+                    }
+                ],
+                MultiPolygon: [
+                    {
                         fill: {
                             color: "blue"
                         },
@@ -1447,21 +2416,22 @@ define("ol3-draw/ol3-delete", ["require", "exports", "openlayers", "ol3-draw/ol3
                             color: "red",
                             width: 2
                         }
-                    }]
+                    }
+                ]
             }
         };
         return Delete;
     }(ol3_button_2.Button));
     exports.Delete = Delete;
 });
-define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "node_modules/ol3-fun/ol3-fun/common", "ol3-draw/ol3-button"], function (require, exports, ol, common_4, ol3_button_3) {
+define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "node_modules/ol3-fun/index", "ol3-draw/ol3-button"], function (require, exports, ol, index_5, ol3_button_3) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var Modify = /** @class */ (function (_super) {
         __extends(Modify, _super);
         function Modify(options) {
             var _this = _super.call(this, options) || this;
-            var styles = common_4.defaults(options.style, Modify.DEFAULT_OPTIONS.style);
+            var styles = index_5.defaults(options.style, Modify.DEFAULT_OPTIONS.style);
             var select = new ol.interaction.Select({
                 style: function (feature, res) {
                     var featureType = feature.getGeometry().getType();
@@ -1503,8 +2473,9 @@ define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "node_modules/o
                 features: select.getFeatures(),
                 style: function (feature, res) {
                     var featureType = feature.getGeometry().getType();
-                    var style = (options.style[featureType] || Modify.DEFAULT_OPTIONS.style[featureType])
-                        .map(function (s) { return _this.symbolizer.fromJson(s); });
+                    var style = (options.style[featureType] || Modify.DEFAULT_OPTIONS.style[featureType]).map(function (s) {
+                        return _this.symbolizer.fromJson(s);
+                    });
                     return style;
                 }
             });
@@ -1535,7 +2506,7 @@ define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "node_modules/o
             return _this;
         }
         Modify.create = function (options) {
-            options = common_4.defaults({}, options, Modify.DEFAULT_OPTIONS);
+            options = index_5.defaults({}, options, Modify.DEFAULT_OPTIONS);
             return ol3_button_3.Button.create(options);
         };
         Modify.DEFAULT_OPTIONS = {
@@ -1544,7 +2515,8 @@ define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "node_modules/o
             title: "Edit",
             eventName: "modify-feature",
             style: {
-                "Point": [{
+                Point: [
+                    {
                         circle: {
                             radius: 2,
                             fill: {
@@ -1556,8 +2528,10 @@ define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "node_modules/o
                             },
                             opacity: 1
                         }
-                    }],
-                "EditPoints": [{
+                    }
+                ],
+                EditPoints: [
+                    {
                         circle: {
                             radius: 5,
                             fill: {
@@ -1565,14 +2539,18 @@ define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "node_modules/o
                             },
                             opacity: 0.2
                         }
-                    }],
-                "MultiLineString": [{
+                    }
+                ],
+                MultiLineString: [
+                    {
                         stroke: {
                             color: "rgba(0, 0, 0, 0.5)",
                             width: 3
                         }
-                    }],
-                "Circle": [{
+                    }
+                ],
+                Circle: [
+                    {
                         fill: {
                             color: "blue"
                         },
@@ -1580,8 +2558,10 @@ define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "node_modules/o
                             color: "red",
                             width: 2
                         }
-                    }],
-                "Polygon": [{
+                    }
+                ],
+                Polygon: [
+                    {
                         fill: {
                             color: "rgba(0, 0, 0, 0.1)"
                         },
@@ -1589,8 +2569,10 @@ define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "node_modules/o
                             color: "rgba(0, 0, 0, 1)",
                             width: 1
                         }
-                    }],
-                "MultiPolygon": [{
+                    }
+                ],
+                MultiPolygon: [
+                    {
                         fill: {
                             color: "rgba(0, 0, 0, 0.1)"
                         },
@@ -1598,7 +2580,8 @@ define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "node_modules/o
                             color: "rgba(0, 0, 0, 1)",
                             width: 1
                         }
-                    }]
+                    }
+                ]
             },
             buttonType: Modify
         };
@@ -1606,7 +2589,7 @@ define("ol3-draw/ol3-edit", ["require", "exports", "openlayers", "node_modules/o
     }(ol3_button_3.Button));
     exports.Modify = Modify;
 });
-define("ol3-draw/ol3-translate", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "node_modules/ol3-fun/ol3-fun/common"], function (require, exports, ol, ol3_button_4, common_5) {
+define("ol3-draw/ol3-translate", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "node_modules/ol3-fun/index"], function (require, exports, ol, ol3_button_4, index_6) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var Translate = /** @class */ (function (_super) {
@@ -1616,8 +2599,7 @@ define("ol3-draw/ol3-translate", ["require", "exports", "openlayers", "ol3-draw/
             var map = options.map;
             var select = new ol.interaction.Select({
                 style: function (feature, res) {
-                    var style = options.style[feature.getGeometry().getType()]
-                        .map(function (s) { return _this.symbolizer.fromJson(s); });
+                    var style = options.style[feature.getGeometry().getType()].map(function (s) { return _this.symbolizer.fromJson(s); });
                     return style;
                 }
             });
@@ -1649,7 +2631,7 @@ define("ol3-draw/ol3-translate", ["require", "exports", "openlayers", "ol3-draw/
             return _this;
         }
         Translate.create = function (options) {
-            options = common_5.defaults({}, options, Translate.DEFAULT_OPTIONS);
+            options = index_6.defaults({}, options, Translate.DEFAULT_OPTIONS);
             return ol3_button_4.Button.create(options);
         };
         Translate.DEFAULT_OPTIONS = {
@@ -1659,7 +2641,8 @@ define("ol3-draw/ol3-translate", ["require", "exports", "openlayers", "ol3-draw/
             title: "Translate",
             eventName: "translate-feature",
             style: {
-                "Point": [{
+                Point: [
+                    {
                         circle: {
                             radius: 2,
                             fill: {
@@ -1671,14 +2654,18 @@ define("ol3-draw/ol3-translate", ["require", "exports", "openlayers", "ol3-draw/
                             },
                             opacity: 1
                         }
-                    }],
-                "MultiLineString": [{
+                    }
+                ],
+                MultiLineString: [
+                    {
                         stroke: {
                             color: "rgba(0, 0, 0, 0.5)",
                             width: 3
                         }
-                    }],
-                "Circle": [{
+                    }
+                ],
+                Circle: [
+                    {
                         fill: {
                             color: "blue"
                         },
@@ -1686,8 +2673,10 @@ define("ol3-draw/ol3-translate", ["require", "exports", "openlayers", "ol3-draw/
                             color: "red",
                             width: 2
                         }
-                    }],
-                "Polygon": [{
+                    }
+                ],
+                Polygon: [
+                    {
                         fill: {
                             color: "rgba(0, 0, 0, 0.1)"
                         },
@@ -1695,8 +2684,10 @@ define("ol3-draw/ol3-translate", ["require", "exports", "openlayers", "ol3-draw/
                             color: "rgba(0, 0, 0, 1)",
                             width: 1
                         }
-                    }],
-                "MultiPolygon": [{
+                    }
+                ],
+                MultiPolygon: [
+                    {
                         fill: {
                             color: "rgba(0, 0, 0, 0.1)"
                         },
@@ -1704,7 +2695,8 @@ define("ol3-draw/ol3-translate", ["require", "exports", "openlayers", "ol3-draw/
                             color: "rgba(0, 0, 0, 1)",
                             width: 1
                         }
-                    }]
+                    }
+                ]
             },
             buttonType: Translate
         };
@@ -1712,7 +2704,7 @@ define("ol3-draw/ol3-translate", ["require", "exports", "openlayers", "ol3-draw/
     }(ol3_button_4.Button));
     exports.Translate = Translate;
 });
-define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "node_modules/ol3-fun/ol3-fun/common"], function (require, exports, ol, ol3_button_5, common_6) {
+define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "node_modules/ol3-fun/index"], function (require, exports, ol, ol3_button_5, index_7) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var Select = /** @class */ (function (_super) {
@@ -1725,7 +2717,12 @@ define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3
                 style: function (feature, res) {
                     var style = options.style[feature.getGeometry().getType()].map(function (s) { return _this.symbolizer.fromJson(s); });
                     style.filter(function (s) { return s.getText(); }).forEach(function (s) {
-                        style[0].getText().setText(selection.getFeatures().getArray().indexOf(feature) + 1 + "");
+                        style[0].getText().setText(selection
+                            .getFeatures()
+                            .getArray()
+                            .indexOf(feature) +
+                            1 +
+                            "");
                     });
                     return style;
                 }
@@ -1736,18 +2733,21 @@ define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3
             boxSelect.on("boxend", function (args) {
                 var extent = boxSelect.getGeometry().getExtent();
                 var features = selection.getFeatures().getArray();
-                options.map.getLayers()
+                options.map
+                    .getLayers()
                     .getArray()
                     .filter(function (l) { return l instanceof ol.layer.Vector; })
                     .map(function (l) { return l; })
-                    .forEach(function (l) { return l.getSource().forEachFeatureIntersectingExtent(extent, function (feature) {
-                    if (-1 === features.indexOf(feature)) {
-                        selection.getFeatures().push(feature);
-                    }
-                    else {
-                        selection.getFeatures().remove(feature);
-                    }
-                }); });
+                    .forEach(function (l) {
+                    return l.getSource().forEachFeatureIntersectingExtent(extent, function (feature) {
+                        if (-1 === features.indexOf(feature)) {
+                            selection.getFeatures().push(feature);
+                        }
+                        else {
+                            selection.getFeatures().remove(feature);
+                        }
+                    });
+                });
             });
             _this.once("change:active", function () {
                 [boxSelect, selection].forEach(function (i) {
@@ -1770,7 +2770,7 @@ define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3
             return _this;
         }
         Select.create = function (options) {
-            options = common_6.defaults({}, options, Select.DEFAULT_OPTIONS);
+            options = index_7.defaults({}, options, Select.DEFAULT_OPTIONS);
             return ol3_button_5.Button.create(options);
         };
         Select.DEFAULT_OPTIONS = {
@@ -1783,7 +2783,8 @@ define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3
             buttonType: Select,
             boxSelectCondition: ol.events.condition.shiftKeyOnly,
             style: {
-                "Point": [{
+                Point: [
+                    {
                         circle: {
                             radius: 20,
                             fill: {
@@ -1805,8 +2806,10 @@ define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3
                             },
                             scale: 3
                         }
-                    }],
-                "MultiLineString": [{
+                    }
+                ],
+                MultiLineString: [
+                    {
                         stroke: {
                             color: "red",
                             width: 2
@@ -1821,8 +2824,10 @@ define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3
                             },
                             scale: 3
                         }
-                    }],
-                "Circle": [{
+                    }
+                ],
+                Circle: [
+                    {
                         fill: {
                             color: "blue"
                         },
@@ -1840,8 +2845,10 @@ define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3
                             },
                             scale: 3
                         }
-                    }],
-                "MultiPolygon": [{
+                    }
+                ],
+                MultiPolygon: [
+                    {
                         fill: {
                             color: "blue"
                         },
@@ -1859,8 +2866,10 @@ define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3
                             },
                             scale: 3
                         }
-                    }],
-                "Polygon": [{
+                    }
+                ],
+                Polygon: [
+                    {
                         fill: {
                             color: "blue"
                         },
@@ -1878,14 +2887,15 @@ define("ol3-draw/ol3-select", ["require", "exports", "openlayers", "ol3-draw/ol3
                             },
                             scale: 3
                         }
-                    }]
+                    }
+                ]
             }
         };
         return Select;
     }(ol3_button_5.Button));
     exports.Select = Select;
 });
-define("ol3-draw/ol3-note", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "node_modules/ol3-fun/ol3-fun/common"], function (require, exports, ol, ol3_button_6, common_7) {
+define("ol3-draw/ol3-note", ["require", "exports", "openlayers", "ol3-draw/ol3-button", "node_modules/ol3-fun/index"], function (require, exports, ol, ol3_button_6, index_8) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var Note = /** @class */ (function (_super) {
@@ -1964,7 +2974,7 @@ define("ol3-draw/ol3-note", ["require", "exports", "openlayers", "ol3-draw/ol3-b
             return _this;
         }
         Note.create = function (options) {
-            options = common_7.defaults({}, options, Note.DEFAULT_OPTIONS);
+            options = index_8.defaults({}, options, Note.DEFAULT_OPTIONS);
             return ol3_button_6.Button.create(options);
         };
         Note.prototype.forceOverlay = function (feature) {
@@ -1981,7 +2991,7 @@ define("ol3-draw/ol3-note", ["require", "exports", "openlayers", "ol3-draw/ol3-b
             var map = options.map;
             //let textarea = document.createElement("textarea");
             var note = feature.get(options.noteFieldName) || "";
-            var textarea = common_7.html("<div class=\"contentEditableDiv hidden\"><p class=\"editableP\" contentEditable=\"true\" placeholder=\"[TYPE YOUR MESSAGE HERE]\">" + note + "</p></div>");
+            var textarea = index_8.html("<div class=\"contentEditableDiv hidden\"><p class=\"editableP\" contentEditable=\"true\" placeholder=\"[TYPE YOUR MESSAGE HERE]\">" + note + "</p></div>");
             var input = textarea.getElementsByClassName("editableP")[0];
             input.addEventListener("input", function () { return feature.set(options.noteFieldName, input.textContent); });
             var overlay = new ol.Overlay({
@@ -1996,7 +3006,7 @@ define("ol3-draw/ol3-note", ["require", "exports", "openlayers", "ol3-draw/ol3-b
         };
         Note.prototype.cssin = function () {
             _super.prototype.cssin.call(this);
-            this.handlers.push(common_7.cssin(this.options.className + "-input", "\n[contenteditable=true]:empty:before{\n  content: attr(placeholder);\n  display: block;\n  opacity: 0.5;\n}\n\n.contentEditableDiv {\n    width:200px;\n    height:60px;\n    position:relative;\n    overflow:auto;\n    margin-bottom: 8px;\n}\n\n.contentEditableDiv.hidden {\n    display: none;\n}\n\n.editableP{\n    min-height:10px;\n    position:absolute;   \n    bottom:0;\n    left:0;\n    right:0;\n    margin: 0;\n    text-align: center;\n    font-family: cursive;\n    rgba(240,240,240,0.6);\n}"));
+            this.handlers.push(index_8.cssin(this.options.className + "-input", "\n[contenteditable=true]:empty:before{\n  content: attr(placeholder);\n  display: block;\n  opacity: 0.5;\n}\n\n.contentEditableDiv {\n    width:200px;\n    height:60px;\n    position:relative;\n    overflow:auto;\n    margin-bottom: 8px;\n}\n\n.contentEditableDiv.hidden {\n    display: none;\n}\n\n.editableP{\n    min-height:10px;\n    position:absolute;   \n    bottom:0;\n    left:0;\n    right:0;\n    margin: 0;\n    text-align: center;\n    font-family: cursive;\n    rgba(240,240,240,0.6);\n}"));
         };
         Note.DEFAULT_OPTIONS = {
             className: "ol-note",
@@ -2029,7 +3039,7 @@ define("ol3-draw/ol3-note", ["require", "exports", "openlayers", "ol3-draw/ol3-b
     }(ol3_button_6.Button));
     exports.Note = Note;
 });
-define("ol3-draw/ol3-history", ["require", "exports", "node_modules/ol3-fun/ol3-fun/common"], function (require, exports, common_8) {
+define("ol3-draw/ol3-history", ["require", "exports", "node_modules/ol3-fun/index"], function (require, exports, index_9) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var NavHistory = /** @class */ (function () {
@@ -2049,7 +3059,7 @@ define("ol3-draw/ol3-history", ["require", "exports", "node_modules/ol3-fun/ol3-
             // capture current extent
             push();
             var stopped = false;
-            var resume = common_8.debounce(function () {
+            var resume = index_9.debounce(function () {
                 stopped = false;
                 console.log("allow capture");
             }, this.options.delay);
@@ -2064,7 +3074,7 @@ define("ol3-draw/ol3-history", ["require", "exports", "node_modules/ol3-fun/ol3-
                     duration: _this.options.delay / 10
                 }, resume);
             };
-            var capture = common_8.debounce(function () {
+            var capture = index_9.debounce(function () {
                 if (stopped) {
                     console.log("capture suspended");
                     return;
@@ -2093,7 +3103,7 @@ define("ol3-draw/ol3-history", ["require", "exports", "node_modules/ol3-fun/ol3-
             });
         }
         NavHistory.create = function (options) {
-            options = common_8.defaults({}, options || {}, NavHistory.DEFAULT_OPTIONS);
+            options = index_9.defaults({}, options || {}, NavHistory.DEFAULT_OPTIONS);
             return new NavHistory(options);
         };
         NavHistory.DEFAULT_OPTIONS = {
@@ -2103,157 +3113,7 @@ define("ol3-draw/ol3-history", ["require", "exports", "node_modules/ol3-fun/ol3-
     }());
     exports.NavHistory = NavHistory;
 });
-define("node_modules/ol3-fun/ol3-fun/navigation", ["require", "exports", "openlayers", "jquery", "node_modules/ol3-fun/ol3-fun/common"], function (require, exports, ol, $, common_9) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    /**
-     * A less disorienting way of changing the maps extent (maybe!)
-     * Zoom out until new feature is visible
-     * Zoom to that feature
-     */
-    function zoomToFeature(map, feature, options) {
-        var promise = $.Deferred();
-        options = common_9.defaults(options || {}, {
-            duration: 1000,
-            padding: 256,
-            minResolution: 2 * map.getView().getMinResolution()
-        });
-        var view = map.getView();
-        var currentExtent = view.calculateExtent(map.getSize());
-        var targetExtent = feature.getGeometry().getExtent();
-        var doit = function (duration) {
-            view.fit(targetExtent, {
-                size: map.getSize(),
-                padding: [options.padding, options.padding, options.padding, options.padding],
-                minResolution: options.minResolution,
-                duration: duration,
-                callback: function () { return promise.resolve(); },
-            });
-        };
-        if (ol.extent.containsExtent(currentExtent, targetExtent)) {
-            // new extent is contained within current extent, pan and zoom in
-            doit(options.duration);
-        }
-        else if (ol.extent.containsExtent(currentExtent, targetExtent)) {
-            // new extent is contained within current extent, pan and zoom out
-            doit(options.duration);
-        }
-        else {
-            // zoom out until target extent is in view
-            var fullExtent = ol.extent.createEmpty();
-            ol.extent.extend(fullExtent, currentExtent);
-            ol.extent.extend(fullExtent, targetExtent);
-            var dscale = ol.extent.getWidth(fullExtent) / ol.extent.getWidth(currentExtent);
-            var duration = 0.5 * options.duration;
-            view.fit(fullExtent, {
-                size: map.getSize(),
-                padding: [options.padding, options.padding, options.padding, options.padding],
-                minResolution: options.minResolution,
-                duration: duration
-            });
-            setTimeout(function () { return doit(0.5 * options.duration); }, duration);
-        }
-        return promise;
-    }
-    exports.zoomToFeature = zoomToFeature;
-});
-// ported from https://github.com/gmaclennan/parse-dms/blob/master/index.js
-define("node_modules/ol3-fun/ol3-fun/parse-dms", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    function decDegFromMatch(m) {
-        var signIndex = {
-            "-": -1,
-            "N": 1,
-            "S": -1,
-            "E": 1,
-            "W": -1
-        };
-        var latLonIndex = {
-            "-": "",
-            "N": "lat",
-            "S": "lat",
-            "E": "lon",
-            "W": "lon"
-        };
-        var degrees, minutes, seconds, sign, latLon;
-        sign = signIndex[m[2]] || signIndex[m[1]] || signIndex[m[6]] || 1;
-        degrees = Number(m[3]);
-        minutes = m[4] ? Number(m[4]) : 0;
-        seconds = m[5] ? Number(m[5]) : 0;
-        latLon = latLonIndex[m[1]] || latLonIndex[m[6]];
-        if (!inRange(degrees, 0, 180))
-            throw 'Degrees out of range';
-        if (!inRange(minutes, 0, 60))
-            throw 'Minutes out of range';
-        if (!inRange(seconds, 0, 60))
-            throw 'Seconds out of range';
-        return {
-            decDeg: sign * (degrees + minutes / 60 + seconds / 3600),
-            latLon: latLon
-        };
-    }
-    function inRange(value, a, b) {
-        return value >= a && value <= b;
-    }
-    function parse(dmsString) {
-        var _a;
-        dmsString = dmsString.trim();
-        // Inspired by https://gist.github.com/JeffJacobson/2955437
-        // See https://regex101.com/r/kS2zR1/3
-        var dmsRe = /([NSEW])?(-)?(\d+(?:\.\d+)?)[°º:d\s]?\s?(?:(\d+(?:\.\d+)?)['’‘′:]\s?(?:(\d{1,2}(?:\.\d+)?)(?:"|″|’’|'')?)?)?\s?([NSEW])?/i;
-        var dmsString2;
-        var m1 = dmsString.match(dmsRe);
-        if (!m1)
-            throw 'Could not parse string';
-        // If dmsString starts with a hemisphere letter, then the regex can also capture the 
-        // hemisphere letter for the second coordinate pair if also in the string
-        if (m1[1]) {
-            m1[6] = undefined;
-            dmsString2 = dmsString.substr(m1[0].length - 1).trim();
-        }
-        else {
-            dmsString2 = dmsString.substr(m1[0].length).trim();
-        }
-        var decDeg1 = decDegFromMatch(m1);
-        var m2 = dmsString2.match(dmsRe);
-        var decDeg2 = m2 && decDegFromMatch(m2);
-        if (typeof decDeg1.latLon === 'undefined') {
-            if (!isNaN(decDeg1.decDeg) && decDeg2 && isNaN(decDeg2.decDeg)) {
-                // If we only have one coordinate but we have no hemisphere value,
-                // just return the decDeg number
-                return decDeg1.decDeg;
-            }
-            else if (!isNaN(decDeg1.decDeg) && decDeg2 && !isNaN(decDeg2.decDeg)) {
-                // If no hemisphere letter but we have two coordinates,
-                // infer that the first is lat, the second lon
-                decDeg1.latLon = 'lat';
-                decDeg2.latLon = 'lon';
-            }
-            else {
-                throw 'Could not parse string';
-            }
-        }
-        // If we parsed the first coordinate as lat or lon, then assume the second is the other
-        if (typeof decDeg2.latLon === 'undefined') {
-            decDeg2.latLon = decDeg1.latLon === 'lat' ? 'lon' : 'lat';
-        }
-        return _a = {},
-            _a[decDeg1.latLon] = decDeg1.decDeg,
-            _a[decDeg2.latLon] = decDeg2.decDeg,
-            _a;
-    }
-    exports.parse = parse;
-});
-define("node_modules/ol3-fun/index", ["require", "exports", "node_modules/ol3-fun/ol3-fun/common", "node_modules/ol3-fun/ol3-fun/navigation", "node_modules/ol3-fun/ol3-fun/parse-dms"], function (require, exports, common, navigation, dms) {
-    "use strict";
-    var index = common.defaults(common, {
-        dms: dms,
-        navigation: navigation
-    });
-    return index;
-});
-define("ol3-draw/services/wfs-sync", ["require", "exports", "openlayers", "jquery", "node_modules/ol3-fun/index"], function (require, exports, ol, $, index_1) {
+define("ol3-draw/services/wfs-sync", ["require", "exports", "openlayers", "jquery", "node_modules/ol3-fun/index"], function (require, exports, ol, $, index_10) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var serializer = new XMLSerializer();
@@ -2265,7 +3125,7 @@ define("ol3-draw/services/wfs-sync", ["require", "exports", "openlayers", "jquer
             this.watch();
         }
         WfsSync.create = function (options) {
-            options = index_1.defaults(options || {}, WfsSync.DEFAULT_OPTIONS);
+            options = index_10.defaults(options || {}, WfsSync.DEFAULT_OPTIONS);
             if (!options.formatter) {
                 options.formatter = new ol.format.WFS();
             }
@@ -2295,7 +3155,7 @@ define("ol3-draw/services/wfs-sync", ["require", "exports", "openlayers", "jquer
          */
         WfsSync.prototype.watch = function () {
             var _this = this;
-            var save = index_1.debounce(function () {
+            var save = index_10.debounce(function () {
                 try {
                     _this.trigger("before-save");
                     _this.saveDrawings({
@@ -2419,7 +3279,7 @@ define("ol3-draw/services/wfs-sync", ["require", "exports", "openlayers", "jquer
     }());
     exports.WfsSync = WfsSync;
 });
-define("ol3-draw/measure-extension", ["require", "exports", "openlayers", "node_modules/ol3-fun/index"], function (require, exports, ol, index_2) {
+define("ol3-draw/measure-extension", ["require", "exports", "openlayers", "node_modules/ol3-fun/index"], function (require, exports, ol, index_11) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     /**
@@ -2438,11 +3298,11 @@ define("ol3-draw/measure-extension", ["require", "exports", "openlayers", "node_
     var Measurement = /** @class */ (function () {
         function Measurement(options) {
             this.options = options;
-            index_2.cssin("measure", "\n\n.tooltip {\n    position: relative;\n    background: rgba(0, 0, 0, 0.5);\n    border-radius: 4px;\n    color: white;\n    padding: 4px 8px;\n    opacity: 0.7;\n    white-space: nowrap;\n}\n.tooltip-measure {\n    opacity: 1;\n    font-weight: bold;\n}\n.tooltip-static {\n    background-color: #ffcc33;\n    color: black;\n    border: 1px solid white;\n}\n.tooltip-measure:before,\n.tooltip-static:before {\n    border-top: 6px solid rgba(0, 0, 0, 0.5);\n    border-right: 6px solid transparent;\n    border-left: 6px solid transparent;\n    content: \"\";\n    position: absolute;\n    bottom: -6px;\n    margin-left: -7px;\n    left: 50%;\n}\n.tooltip-static:before {\n    border-top-color: #ffcc33;\n}\n\n    ");
+            index_11.cssin("measure", "\n\n.tooltip {\n    position: relative;\n    background: rgba(0, 0, 0, 0.5);\n    border-radius: 4px;\n    color: white;\n    padding: 4px 8px;\n    opacity: 0.7;\n    white-space: nowrap;\n}\n.tooltip-measure {\n    opacity: 1;\n    font-weight: bold;\n}\n.tooltip-static {\n    background-color: #ffcc33;\n    color: black;\n    border: 1px solid white;\n}\n.tooltip-measure:before,\n.tooltip-static:before {\n    border-top: 6px solid rgba(0, 0, 0, 0.5);\n    border-right: 6px solid transparent;\n    border-left: 6px solid transparent;\n    content: \"\";\n    position: absolute;\n    bottom: -6px;\n    margin-left: -7px;\n    left: 50%;\n}\n.tooltip-static:before {\n    border-top-color: #ffcc33;\n}\n\n    ");
             this.createMeasureTooltip();
         }
         Measurement.create = function (options) {
-            options = index_2.defaults({}, options || {}, Measurement.DEFAULT_OPTIONS);
+            options = index_11.defaults({}, options || {}, Measurement.DEFAULT_OPTIONS);
             return new Measurement(options);
         };
         Measurement.prototype.createMeasureTooltip = function () {
@@ -2554,19 +3414,35 @@ define("index", ["require", "exports", "ol3-draw/ol3-draw", "ol3-draw/ol3-button
     exports.WfsSync = wfs_sync_1.WfsSync;
     exports.Measurement = measure_extension_1.Measurement;
 });
-define("examples/mapmaker", ["require", "exports", "openlayers", "node_modules/ol3-fun/ol3-fun/common"], function (require, exports, ol, common_10) {
+define("examples/extras/mapmaker", ["require", "exports", "openlayers", "node_modules/ol3-fun/index"], function (require, exports, ol, index_12) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var MapMaker = /** @class */ (function () {
         function MapMaker() {
         }
         MapMaker.create = function (options) {
-            options = common_10.mixin(common_10.mixin({}, MapMaker.DEFAULT_OPTIONS), options);
+            if (!options.target) {
+                var target = document.getElementById("map");
+                if (!target)
+                    target = document.getElementsByClassName("map")[0];
+                if (!target) {
+                    target = document.createElement("div");
+                    target.id = target.className = "map";
+                    document.body.appendChild(target);
+                }
+                options.target = target;
+            }
+            options = index_12.mixin(index_12.mixin({}, MapMaker.DEFAULT_OPTIONS), options);
             options.target.classList.add("ol-map");
-            common_10.cssin("mapmaker", "\n        .ol-map {\n            top: 0;\n            left: 0;\n            right: 0;\n            bottom:0;\n            position: absolute;\n        }\n        .ol-scale-line {\n            left: auto;\n            right: 1em;\n        }\n        ");
+            index_12.cssin("mapmaker", "\n        .ol-map {\n            top: 0;\n            left: 0;\n            right: 0;\n            bottom:0;\n            position: absolute;\n        }\n        .ol-scale-line {\n            left: auto;\n            right: 1em;\n        }\n        ");
             var osm = new ol.layer.Tile({
                 opacity: 0.8,
-                source: new ol.source.OSM()
+                source: new ol.source.TileDebug({
+                    projection: "EPSG:3857",
+                    tileGrid: ol.tilegrid.createXYZ({
+                        tileSize: 256
+                    })
+                })
             });
             var view = new ol.View({
                 projection: options.projection,
@@ -2578,11 +3454,15 @@ define("examples/mapmaker", ["require", "exports", "openlayers", "node_modules/o
                 keyboardEventTarget: document,
                 loadTilesWhileAnimating: true,
                 loadTilesWhileInteracting: true,
-                controls: ol.control.defaults({ attribution: false }).extend([new ol.control.ScaleLine(), new ol.control.OverviewMap({
-                        layers: [osm], view: new ol.View({
+                controls: ol.control.defaults({ attribution: false }).extend([
+                    new ol.control.ScaleLine(),
+                    new ol.control.OverviewMap({
+                        layers: [osm],
+                        view: new ol.View({
                             projection: options.projection
                         })
-                    })]),
+                    })
+                ]),
                 view: view,
                 layers: [osm]
             });
@@ -2593,51 +3473,59 @@ define("examples/mapmaker", ["require", "exports", "openlayers", "node_modules/o
     }());
     exports.MapMaker = MapMaker;
 });
-define("examples/measure", ["require", "exports", "examples/mapmaker", "index"], function (require, exports, mapmaker_1, index_3) {
+define("examples/measure", ["require", "exports", "examples/extras/mapmaker", "index"], function (require, exports, mapmaker_1, index_13) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     function run() {
         var map = mapmaker_1.MapMaker.create({
-            target: document.getElementsByClassName("map")[0],
             projection: "EPSG:3857",
             center: [-9167000, 4148000],
             zoom: 21,
             basemap: "osm"
         });
-        index_3.Measurement.create({
+        index_13.Measurement.create({
             map: map,
-            draw: index_3.Draw.create({ map: map, position: "top right-1", label: "┈", title: "Measure", geometryType: "MultiLineString" }),
-            edit: index_3.Modify.create({ map: map, position: "top right-3", label: "✎", title: "Edit Measurements" }),
+            draw: index_13.Draw.create({
+                map: map,
+                position: "top right-1",
+                label: "┈",
+                title: "Measure",
+                geometryType: "MultiLineString"
+            }),
+            edit: index_13.Modify.create({ map: map, position: "top right-3", label: "✎", title: "Edit Measurements" }),
             uom: "mi"
         });
     }
     exports.run = run;
 });
-define("examples/ol3-draw", ["require", "exports", "openlayers", "jquery", "node_modules/ol3-fun/ol3-fun/common", "index", "examples/mapmaker"], function (require, exports, ol, $, common_11, index_4, mapmaker_2) {
+define("examples/ol3-draw", ["require", "exports", "openlayers", "jquery", "node_modules/ol3-fun/index", "index", "examples/extras/mapmaker"], function (require, exports, ol, $, index_14, index_15, mapmaker_2) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    var GROUP_NAME = common_11.getParameterByName("GROUP_NAME") || "ol3-draw-examples";
+    var GROUP_NAME = index_14.getParameterByName("GROUP_NAME") || "ol3-draw-examples";
     var WFS_INFO = {
         srsName: "EPSG:3857",
         wfsUrl: location.protocol + "//" + location.hostname + ":8080/geoserver/cite/wfs",
         featureNS: "http://www.opengeospatial.net/cite",
-        featurePrefix: "cite",
+        featurePrefix: "cite"
     };
     function stopInteraction(map, type) {
-        map.getInteractions()
+        map
+            .getInteractions()
             .getArray()
             .filter(function (i) { return i instanceof type; })
             .forEach(function (t) { return t.setActive(false); });
     }
     function stopControl(map, type) {
-        map.getControls()
+        map
+            .getControls()
             .getArray()
             .filter(function (i) { return i.get("active"); })
             .filter(function (i) { return i instanceof type; })
             .forEach(function (t) { return t.set("active", false); });
     }
     function stopOtherControls(map, control) {
-        map.getControls()
+        map
+            .getControls()
             .getArray()
             .filter(function (i) { return i.get("active"); })
             .filter(function (i) { return typeof i === typeof control; })
@@ -2651,7 +3539,9 @@ define("examples/ol3-draw", ["require", "exports", "openlayers", "jquery", "node
             featurePrefix: WFS_INFO.featurePrefix,
             featureTypes: [args.featureType],
             srsName: WFS_INFO.srsName,
-            filter: ol.format.filter.equalTo("strname", GROUP_NAME),
+            filter: ol.format.filter.equalTo("strname", GROUP_NAME)
+            // geometryName: "geom",
+            // bbox: [-9190000, 4020000, -9180000, 4030000],
         });
         var data = serializer.serializeToString(requestBody);
         $.ajax({
@@ -2670,7 +3560,7 @@ define("examples/ol3-draw", ["require", "exports", "openlayers", "jquery", "node
                     features.forEach(function (f) { return ol.extent.extend(extent_1, f.getGeometry().getExtent()); });
                     args.map.getView().fit(extent_1, { size: args.map.getSize() });
                 }
-                index_4.WfsSync.create({
+                index_15.WfsSync.create({
                     wfsUrl: WFS_INFO.wfsUrl,
                     featureNS: WFS_INFO.featureNS,
                     featurePrefix: WFS_INFO.featurePrefix,
@@ -2687,7 +3577,6 @@ define("examples/ol3-draw", ["require", "exports", "openlayers", "jquery", "node
     }
     function run() {
         var map = mapmaker_2.MapMaker.create({
-            target: document.getElementsByClassName("map")[0],
             projection: WFS_INFO.srsName,
             center: [-9167000, 4148000],
             zoom: 21,
@@ -2704,9 +3593,12 @@ define("examples/ol3-draw", ["require", "exports", "openlayers", "jquery", "node
             });
         });
         var toolbar = [
-            index_4.Select.create({ map: map, label: "?", eventName: "info", boxSelectCondition: ol.events.condition.primaryAction }),
-            index_4.Draw.create({
-                map: map, geometryType: "MultiPolygon", label: "▧", title: "Polygon",
+            index_15.Select.create({ map: map, label: "?", eventName: "info", boxSelectCondition: ol.events.condition.primaryAction }),
+            index_15.Draw.create({
+                map: map,
+                geometryType: "MultiPolygon",
+                label: "▧",
+                title: "Polygon",
                 layers: [polygonLayer],
                 style: [
                     {
@@ -2726,8 +3618,11 @@ define("examples/ol3-draw", ["require", "exports", "openlayers", "jquery", "node
                     }
                 ]
             }),
-            index_4.Draw.create({
-                map: map, geometryType: "Circle", label: "◯", title: "Circle",
+            index_15.Draw.create({
+                map: map,
+                geometryType: "Circle",
+                label: "◯",
+                title: "Circle",
                 layers: [polygonLayer],
                 style: [
                     {
@@ -2741,50 +3636,63 @@ define("examples/ol3-draw", ["require", "exports", "openlayers", "jquery", "node
                     }
                 ]
             }),
-            index_4.Draw.create({
-                map: map, geometryType: "MultiLineString", label: "▬", title: "Line",
+            index_15.Draw.create({
+                map: map,
+                geometryType: "MultiLineString",
+                label: "▬",
+                title: "Line",
                 layers: [lineLayer]
             }),
-            index_4.Draw.create({
-                map: map, geometryType: "Point", label: "●", title: "Point",
+            index_15.Draw.create({
+                map: map,
+                geometryType: "Point",
+                label: "●",
+                title: "Point",
                 layers: [pointLayer]
             }),
-            index_4.Draw.create({
-                map: map, geometryType: "Point", label: "★", title: "Gradient", style: [
+            index_15.Draw.create({
+                map: map,
+                geometryType: "Point",
+                label: "★",
+                title: "Gradient",
+                style: [
                     {
-                        "star": {
-                            "fill": {
-                                "gradient": {
-                                    "type": "linear(1,0,3,46)",
-                                    "stops": "rgba(30,186,19,0.22) 0%;rgba(4,75,1,0.48) 70%;rgba(12,95,37,0.56) 77%;rgba(45,53,99,0.72) 100%"
+                        star: {
+                            fill: {
+                                gradient: {
+                                    type: "linear(1,0,3,46)",
+                                    stops: "rgba(30,186,19,0.22) 0%;rgba(4,75,1,0.48) 70%;rgba(12,95,37,0.56) 77%;rgba(45,53,99,0.72) 100%"
                                 }
                             },
-                            "opacity": 1,
-                            "stroke": {
-                                "color": "rgba(26,39,181,0.82)",
-                                "width": 8
+                            opacity: 1,
+                            stroke: {
+                                color: "rgba(26,39,181,0.82)",
+                                width: 8
                             },
-                            "radius": 23,
-                            "radius2": 15,
-                            "points": 20,
-                            "scale": 1
+                            radius: 23,
+                            radius2: 15,
+                            points: 20,
+                            scale: 1
                         }
                     }
                 ]
             }),
-            index_4.Translate.create({ map: map, label: "↔" }),
-            index_4.Modify.create({ map: map, label: "Δ" }),
-            index_4.Delete.create({ map: map, label: "␡", boxSelectCondition: ol.events.condition.primaryAction }),
-            index_4.Button.create({ map: map, label: "⎚", title: "Clear", eventName: "clear-drawings" }),
-            index_4.Button.create({ map: map, label: "💾", eventName: "save", title: "Save" }),
-            index_4.Button.create({ map: map, label: "X", eventName: "exit", title: "Exit" }),
+            index_15.Translate.create({ map: map, label: "↔" }),
+            index_15.Modify.create({ map: map, label: "Δ" }),
+            index_15.Delete.create({ map: map, label: "␡", boxSelectCondition: ol.events.condition.primaryAction }),
+            index_15.Button.create({ map: map, label: "⎚", title: "Clear", eventName: "clear-drawings" }),
+            index_15.Button.create({ map: map, label: "💾", eventName: "save", title: "Save" }),
+            index_15.Button.create({ map: map, label: "X", eventName: "exit", title: "Exit" })
         ];
-        toolbar.forEach(function (t, i) { return t.setPosition("left top" + (-i * 2 || '')); });
-        index_4.Note.create({
-            map: map, position: "left-2 top", layer: pointLayer, noteFieldName: "url"
+        toolbar.forEach(function (t, i) { return t.setPosition("left top" + (-i * 2 || "")); });
+        index_15.Note.create({
+            map: map,
+            position: "left-2 top",
+            layer: pointLayer,
+            noteFieldName: "url"
         });
         {
-            var h_3 = common_11.cssin("ol3-draw", "\n        .ol-zoom { top: 0.5em; right: 0.5em; left: auto;}\n        .ol-zoom button {color: rgba(0,60,136,1); background-color: transparent; }\n        .ol-overviewmap { right: .5em; top: 4.5em; left: auto; bottom: auto;}\n        ");
+            var h_3 = index_14.cssin("ol3-draw", "\n        .ol-zoom { top: 0.5em; right: 0.5em; left: auto;}\n        .ol-zoom button {color: rgba(0,60,136,1); background-color: transparent; }\n        .ol-overviewmap { right: .5em; top: 4.5em; left: auto; bottom: auto;}\n        ");
             map.on("exit", function () {
                 toolbar.forEach(function (t) { return t.destroy(); });
                 h_3();
@@ -2792,65 +3700,65 @@ define("examples/ol3-draw", ["require", "exports", "openlayers", "jquery", "node
             map.on("info", function (args) {
                 if (args.control.get("active")) {
                     stopOtherControls(map, args.control);
-                    stopControl(map, index_4.Draw);
-                    stopControl(map, index_4.Delete);
-                    stopControl(map, index_4.Translate);
-                    stopControl(map, index_4.Modify);
+                    stopControl(map, index_15.Draw);
+                    stopControl(map, index_15.Delete);
+                    stopControl(map, index_15.Translate);
+                    stopControl(map, index_15.Modify);
                 }
             });
             map.on("delete-feature", function (args) {
                 if (args.control.get("active")) {
                     stopOtherControls(map, args.control);
-                    stopControl(map, index_4.Draw);
-                    stopControl(map, index_4.Modify);
-                    stopControl(map, index_4.Translate);
-                    stopControl(map, index_4.Select);
+                    stopControl(map, index_15.Draw);
+                    stopControl(map, index_15.Modify);
+                    stopControl(map, index_15.Translate);
+                    stopControl(map, index_15.Select);
                 }
                 return true;
             });
             map.on("draw-feature", function (args) {
                 if (args.control.get("active")) {
                     stopOtherControls(map, args.control);
-                    stopControl(map, index_4.Delete);
-                    stopControl(map, index_4.Modify);
-                    stopControl(map, index_4.Translate);
-                    stopControl(map, index_4.Select);
+                    stopControl(map, index_15.Delete);
+                    stopControl(map, index_15.Modify);
+                    stopControl(map, index_15.Translate);
+                    stopControl(map, index_15.Select);
                 }
                 return true;
             });
             map.on("translate-feature", function (args) {
                 if (args.control.get("active")) {
                     stopOtherControls(map, args.control);
-                    stopControl(map, index_4.Delete);
-                    stopControl(map, index_4.Draw);
-                    stopControl(map, index_4.Modify);
-                    stopControl(map, index_4.Select);
+                    stopControl(map, index_15.Delete);
+                    stopControl(map, index_15.Draw);
+                    stopControl(map, index_15.Modify);
+                    stopControl(map, index_15.Select);
                 }
             });
             map.on("modify-feature", function (args) {
                 if (args.control.get("active")) {
                     stopOtherControls(map, args.control);
-                    stopControl(map, index_4.Delete);
-                    stopControl(map, index_4.Draw);
-                    stopControl(map, index_4.Translate);
-                    stopControl(map, index_4.Select);
+                    stopControl(map, index_15.Delete);
+                    stopControl(map, index_15.Draw);
+                    stopControl(map, index_15.Translate);
+                    stopControl(map, index_15.Select);
                 }
             });
             map.on("clear-drawings", function (args) {
                 if (args.control.get("active")) {
-                    stopControl(map, index_4.Delete);
-                    stopControl(map, index_4.Draw);
-                    stopControl(map, index_4.Translate);
-                    stopControl(map, index_4.Select);
+                    stopControl(map, index_15.Delete);
+                    stopControl(map, index_15.Draw);
+                    stopControl(map, index_15.Translate);
+                    stopControl(map, index_15.Select);
                     if (prompt("Are you sure you want to delete ALL the features?", "No!")) {
                         console.log("Too dangerous, sorry");
                         return false;
-                        map.getControls()
+                        map
+                            .getControls()
                             .getArray()
-                            .filter(function (i) { return i instanceof index_4.Draw; })
+                            .filter(function (i) { return i instanceof index_15.Draw; })
                             .forEach(function (t) { return t.options.layers.forEach(function (l) { return l.getSource().clear(); }); });
                     }
-                    ;
                 }
             });
         }
@@ -2885,23 +3793,22 @@ define("examples/ol3-draw", ["require", "exports", "openlayers", "jquery", "node
     }
     exports.run = run;
 });
-define("examples/ol3-history", ["require", "exports", "index", "examples/mapmaker"], function (require, exports, index_5, mapmaker_3) {
+define("examples/ol3-history", ["require", "exports", "index", "examples/extras/mapmaker"], function (require, exports, index_16, mapmaker_3) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     function run() {
         var map = mapmaker_3.MapMaker.create({
-            target: document.getElementsByClassName("map")[0],
             projection: "EPSG:3857",
             center: [-9167000, 4148000],
             zoom: 21,
             basemap: "osm"
         });
-        index_5.NavHistory.create({
+        index_16.NavHistory.create({
             map: map,
             delay: 500
         });
-        index_5.Button.create({ map: map, label: "<<", eventName: "nav:back", title: "Back", position: "right-2 top" });
-        index_5.Button.create({ map: map, label: ">>", eventName: "nav:forward", title: "Forward", position: "right top" });
+        index_16.Button.create({ map: map, label: "<<", eventName: "nav:back", title: "Back", position: "right-2 top" });
+        index_16.Button.create({ map: map, label: ">>", eventName: "nav:forward", title: "Forward", position: "right top" });
     }
     exports.run = run;
 });
