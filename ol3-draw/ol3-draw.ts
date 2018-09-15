@@ -1,18 +1,26 @@
 import ol = require("openlayers");
-import { Button, ButtonOptions as ButtonOptions } from "./ol3-button";
-import { html, mixin } from "ol3-fun/ol3-fun/common";
+import { Button, ButtonOptions } from "./ol3-button";
+import { html, mixin } from "ol3-fun/index";
 import { Format } from "ol3-symbolizer/index";
 
 export interface DrawControlOptions extends ButtonOptions {
   map?: ol.Map;
   layers?: Array<ol.layer.Vector>;
   style?: Format.Style[];
-  geometryType?: "Point" | "LineString" | "LinearRing" | "Polygon" | "MultiPoint" | "MultiLineString" | "MultiPolygon" | "GeometryCollection" | "Circle";
+  geometryType?:
+    | "Point"
+    | "LineString"
+    | "LinearRing"
+    | "Polygon"
+    | "MultiPoint"
+    | "MultiLineString"
+    | "MultiPolygon"
+    | "GeometryCollection"
+    | "Circle";
   geometryName?: string;
 }
 
 export class Draw extends Button {
-
   static DEFAULT_OPTIONS: DrawControlOptions = {
     className: "ol-draw",
     geometryType: "Point",
@@ -52,7 +60,7 @@ export class Draw extends Button {
         }
       }
     ]
-  }
+  };
 
   public options: DrawControlOptions;
 
@@ -81,8 +89,7 @@ export class Draw extends Button {
       draw.on(eventName, args => this.dispatchEvent(args));
     });
 
-    draw.on("change:active", () =>
-      this.options.element.classList.toggle("active", draw.getActive()));
+    draw.on("change:active", () => this.options.element.classList.toggle("active", draw.getActive()));
 
     options.map.addInteraction(draw);
     return draw;
@@ -92,11 +99,13 @@ export class Draw extends Button {
     super(options);
 
     this.interactions = {};
-    this.handlers.push(() => Object.keys(this.interactions).forEach(k => {
-      let interaction = this.interactions[k];
-      interaction.setActive(false);
-      options.map.removeInteraction(interaction);
-    }))
+    this.handlers.push(() =>
+      Object.keys(this.interactions).forEach(k => {
+        let interaction = this.interactions[k];
+        interaction.setActive(false);
+        options.map.removeInteraction(interaction);
+      })
+    );
 
     this.on("change:active", () => {
       let active = this.get("active");
@@ -123,5 +132,4 @@ export class Draw extends Button {
       options.layers = [layer];
     }
   }
-
 }

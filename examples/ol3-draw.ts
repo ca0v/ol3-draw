@@ -1,10 +1,9 @@
 import ol = require("openlayers");
 import $ = require("jquery");
 
-import { cssin, getParameterByName } from "ol3-fun/ol3-fun/common";
+import { cssin, getParameterByName } from "ol3-fun/index";
 import { Button, Delete, Draw, Modify, Translate, Select, Note, WfsSync } from "../index";
 import { MapMaker } from "./mapmaker";
-
 
 const GROUP_NAME = getParameterByName("GROUP_NAME") || "ol3-draw-examples";
 
@@ -12,18 +11,20 @@ const WFS_INFO = {
   srsName: "EPSG:3857",
   wfsUrl: `${location.protocol}//${location.hostname}:8080/geoserver/cite/wfs`,
   featureNS: "http://www.opengeospatial.net/cite",
-  featurePrefix: "cite",
+  featurePrefix: "cite"
 };
 
 function stopInteraction(map: ol.Map, type: any) {
-  map.getInteractions()
+  map
+    .getInteractions()
     .getArray()
     .filter(i => i instanceof type)
     .forEach(t => t.setActive(false));
 }
 
 function stopControl(map: ol.Map, type: any) {
-  map.getControls()
+  map
+    .getControls()
     .getArray()
     .filter(i => i.get("active"))
     .filter(i => i instanceof type)
@@ -31,7 +32,8 @@ function stopControl(map: ol.Map, type: any) {
 }
 
 function stopOtherControls(map: ol.Map, control: ol.control.Control) {
-  map.getControls()
+  map
+    .getControls()
     .getArray()
     .filter(i => i.get("active"))
     .filter(i => typeof i === typeof control)
@@ -54,7 +56,7 @@ function loadAndWatch(args: {
     featurePrefix: WFS_INFO.featurePrefix,
     featureTypes: [args.featureType],
     srsName: WFS_INFO.srsName,
-    filter: ol.format.filter.equalTo("strname", GROUP_NAME),
+    filter: ol.format.filter.equalTo("strname", GROUP_NAME)
     // geometryName: "geom",
     // bbox: [-9190000, 4020000, -9180000, 4030000],
   });
@@ -90,13 +92,11 @@ function loadAndWatch(args: {
         },
         converter: args.converter
       });
-
     }
   });
 }
 
 export function run() {
-
   let map = MapMaker.create({
     target: document.getElementsByClassName("map")[0],
     projection: WFS_INFO.srsName,
@@ -122,7 +122,10 @@ export function run() {
     Select.create({ map: map, label: "?", eventName: "info", boxSelectCondition: ol.events.condition.primaryAction }),
 
     Draw.create({
-      map: map, geometryType: "MultiPolygon", label: "▧", title: "Polygon",
+      map: map,
+      geometryType: "MultiPolygon",
+      label: "▧",
+      title: "Polygon",
       layers: [polygonLayer],
       style: [
         {
@@ -140,11 +143,13 @@ export function run() {
             width: 1
           }
         }
-
       ]
     }),
     Draw.create({
-      map: map, geometryType: "Circle", label: "◯", title: "Circle",
+      map: map,
+      geometryType: "Circle",
+      label: "◯",
+      title: "Circle",
       layers: [polygonLayer],
       style: [
         {
@@ -160,34 +165,44 @@ export function run() {
     }),
 
     Draw.create({
-      map: map, geometryType: "MultiLineString", label: "▬", title: "Line",
+      map: map,
+      geometryType: "MultiLineString",
+      label: "▬",
+      title: "Line",
       layers: [lineLayer]
     }),
 
     Draw.create({
-      map: map, geometryType: "Point", label: "●", title: "Point",
+      map: map,
+      geometryType: "Point",
+      label: "●",
+      title: "Point",
       layers: [pointLayer]
     }),
 
     Draw.create({
-      map: map, geometryType: "Point", label: "★", title: "Gradient", style: [
+      map: map,
+      geometryType: "Point",
+      label: "★",
+      title: "Gradient",
+      style: [
         {
-          "star": {
-            "fill": {
-              "gradient": {
-                "type": "linear(1,0,3,46)",
-                "stops": "rgba(30,186,19,0.22) 0%;rgba(4,75,1,0.48) 70%;rgba(12,95,37,0.56) 77%;rgba(45,53,99,0.72) 100%"
+          star: {
+            fill: {
+              gradient: {
+                type: "linear(1,0,3,46)",
+                stops: "rgba(30,186,19,0.22) 0%;rgba(4,75,1,0.48) 70%;rgba(12,95,37,0.56) 77%;rgba(45,53,99,0.72) 100%"
               }
             },
-            "opacity": 1,
-            "stroke": {
-              "color": "rgba(26,39,181,0.82)",
-              "width": 8
+            opacity: 1,
+            stroke: {
+              color: "rgba(26,39,181,0.82)",
+              width: 8
             },
-            "radius": 23,
-            "radius2": 15,
-            "points": 20,
-            "scale": 1
+            radius: 23,
+            radius2: 15,
+            points: 20,
+            scale: 1
           }
         }
       ]
@@ -200,23 +215,27 @@ export function run() {
     Button.create({ map: map, label: "⎚", title: "Clear", eventName: "clear-drawings" }),
 
     Button.create({ map: map, label: "💾", eventName: "save", title: "Save" }),
-    Button.create({ map: map, label: "X", eventName: "exit", title: "Exit" }),
-
+    Button.create({ map: map, label: "X", eventName: "exit", title: "Exit" })
   ];
 
-  toolbar.forEach((t, i) => t.setPosition(`left top${-i * 2 || ''}`));
+  toolbar.forEach((t, i) => t.setPosition(`left top${-i * 2 || ""}`));
 
   Note.create({
-    map: map, position: "left-2 top", layer: pointLayer, noteFieldName: "url"
+    map: map,
+    position: "left-2 top",
+    layer: pointLayer,
+    noteFieldName: "url"
   });
 
   {
-
-    let h = cssin("ol3-draw", `
+    let h = cssin(
+      "ol3-draw",
+      `
         .ol-zoom { top: 0.5em; right: 0.5em; left: auto;}
         .ol-zoom button {color: rgba(0,60,136,1); background-color: transparent; }
         .ol-overviewmap { right: .5em; top: 4.5em; left: auto; bottom: auto;}
-        `);
+        `
+    );
     map.on("exit", () => {
       toolbar.forEach(t => t.destroy());
       h();
@@ -284,15 +303,14 @@ export function run() {
         if (prompt("Are you sure you want to delete ALL the features?", "No!")) {
           console.log("Too dangerous, sorry");
           return false;
-          map.getControls()
+          map
+            .getControls()
             .getArray()
             .filter(i => i instanceof Draw)
             .forEach(t => (<Draw>t).options.layers.forEach(l => l.getSource().clear()));
-        };
-
+        }
       }
     });
-
   }
 
   loadAndWatch({
@@ -326,5 +344,4 @@ export function run() {
       return new ol.geom.MultiPolygon([poly.getCoordinates()]);
     }
   });
-
 }

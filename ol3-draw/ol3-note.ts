@@ -1,6 +1,6 @@
 import ol = require("openlayers");
 import { Button, ButtonOptions } from "./ol3-button";
-import { cssin, defaults, html } from "ol3-fun/ol3-fun/common";
+import { cssin, defaults, html } from "ol3-fun/index";
 import { Format } from "ol3-symbolizer/index";
 
 /**

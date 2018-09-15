@@ -1,98 +1,98 @@
 import ol = require("openlayers");
-import {olx} from "openlayers";
-import { cssin, html, mixin, pair, range } from "ol3-fun/ol3-fun/common";
+import { olx } from "openlayers";
+import { cssin, html, mixin, pair, range } from "ol3-fun/index";
 import { StyleConverter } from "ol3-symbolizer/ol3-symbolizer/format/ol3-symbolizer";
 
 export interface ButtonOptions extends olx.control.ControlOptions {
-    map?: ol.Map;
-    className?: string;
-    position?: string;
-    label?: string;
-    title?: string;
-    eventName?: string;
-    buttonType?: typeof Button;
+  map?: ol.Map;
+  className?: string;
+  position?: string;
+  label?: string;
+  title?: string;
+  eventName?: string;
+  buttonType?: typeof Button;
 }
 
 export class Button extends ol.control.Control {
+  static DEFAULT_OPTIONS: ButtonOptions = {
+    className: "ol-button",
+    position: "top right",
+    label: "Button",
+    title: "Button",
+    eventName: "click:button",
+    buttonType: Button
+  };
 
-    static DEFAULT_OPTIONS: ButtonOptions = {
-        className: "ol-button",
-        position: "top right",
-        label: "Button",
-        title: "Button",
-        eventName: "click:button",
-        buttonType: Button
+  static create(options?: ButtonOptions) {
+    options = mixin(mixin({}, Button.DEFAULT_OPTIONS), options || {});
+
+    options.element = options.element || document.createElement("DIV");
+
+    let button = new options.buttonType(options);
+    if (options.map) {
+      options.map.addControl(button);
     }
+    return button;
+  }
 
-    static create(options?: ButtonOptions) {
-        options = mixin(mixin({}, Button.DEFAULT_OPTIONS), options || {});
+  public options: ButtonOptions;
+  public handlers: Array<() => void>;
+  public symbolizer: StyleConverter;
 
-        options.element = options.element || document.createElement("DIV");
+  constructor(options: ButtonOptions) {
+    super(options);
+    this.options = options;
+    this.handlers = [];
+    this.symbolizer = new StyleConverter();
 
-        let button = new (options.buttonType)(options);
-        if (options.map) {
-            options.map.addControl(button);
-        }
-        return button;
-    }
+    this.cssin();
+    options.element.className = `${options.className} ${options.position}`;
 
-    public options: ButtonOptions;
-    public handlers: Array<() => void>;
-    public symbolizer: StyleConverter;
+    let button = html(`<input type="button" value="${options.label}" />`);
+    this.handlers.push(() => options.element.remove());
 
-    constructor(options: ButtonOptions) {
-        super(options);
-        this.options = options;
-        this.handlers = [];
-        this.symbolizer = new StyleConverter();
+    button.title = options.title;
+    options.element.appendChild(button);
 
-        this.cssin();
-        options.element.className = `${options.className} ${options.position}`;
+    this.set("active", false);
 
-        let button = html(`<input type="button" value="${options.label}" />`);
-        this.handlers.push(() => options.element.remove());
+    button.addEventListener("click", () => {
+      this.dispatchEvent("click");
+      this.set("active", !this.get("active"));
+    });
 
-        button.title = options.title;
-        options.element.appendChild(button);
+    this.on("change:active", () => {
+      this.options.element.classList.toggle("active", this.get("active"));
+      options.map.dispatchEvent({
+        type: options.eventName,
+        control: this
+      });
+    });
+  }
 
-        this.set("active", false);
+  setPosition(position: string) {
+    this.options.position.split(" ").forEach(k => this.options.element.classList.remove(k));
 
-        button.addEventListener("click", () => {
-            this.dispatchEvent("click");
-            this.set("active", !this.get("active"));
-        });
+    position.split(" ").forEach(k => this.options.element.classList.add(k));
 
-        this.on("change:active", () => {
-            this.options.element.classList.toggle("active", this.get("active"));
-            options.map.dispatchEvent({
-                type: options.eventName,
-                control: this
-            });
-        });
+    this.options.position = position;
+  }
 
-    }
+  destroy() {
+    this.handlers.forEach(h => h());
+    this.setTarget(null);
+  }
 
-    setPosition(position: string) {
-        this.options.position.split(' ')
-            .forEach(k => this.options.element.classList.remove(k));
+  cssin() {
+    let className = this.options.className;
+    let positions = pair("top left right bottom".split(" "), range(24)).map(
+      pos => `.${className}.${pos[0] + (-pos[1] || "")} { ${pos[0]}:${0.5 + pos[1]}em; }`
+    );
 
-        position.split(' ')
-            .forEach(k => this.options.element.classList.add(k));
-
-        this.options.position = position;
-    }
-
-    destroy() {
-        this.handlers.forEach(h => h());
-        this.setTarget(null);
-    }
-
-    cssin() {
-        let className = this.options.className;
-        let positions = pair("top left right bottom".split(" "), range(24))
-            .map(pos => `.${className}.${pos[0] + (-pos[1] || '')} { ${pos[0]}:${0.5 + pos[1]}em; }`);
-
-        this.handlers.push(cssin(className, `
+    this.handlers.push(
+      cssin(
+        className,
+        `
             .${className} {
                 position: absolute;
                 background-color: rgba(255,255,255,.4);
@@ -110,21 +110,20 @@ export class Button extends ol.control.Control {
                 width: 2em;
                 height: 2em;
             }
-            ${positions.join('\n')}
-        `));
+            ${positions.join("\n")}
+        `
+      )
+    );
+  }
+
+  setMap(map: ol.Map) {
+    let options = this.options;
+    super.setMap(map);
+    options.map = map;
+
+    if (!map) {
+      this.destroy();
+      return;
     }
-
-    setMap(map: ol.Map) {
-        let options = this.options;
-        super.setMap(map);
-        options.map = map;
-
-        if (!map) {
-            this.destroy();
-            return;
-        }
-
-    }
-
+  }
 }
-
