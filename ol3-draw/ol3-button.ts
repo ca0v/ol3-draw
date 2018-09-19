@@ -5,16 +5,17 @@ import { StyleConverter } from "ol3-symbolizer/ol3-symbolizer/format/ol3-symboli
 
 export interface ButtonOptions extends olx.control.ControlOptions {
   map?: ol.Map;
-  className?: string;
-  position?: string;
-  label?: string;
-  title?: string;
-  eventName?: string;
-  buttonType?: typeof Button;
+  element: HTMLElement; // required
+  className: string;
+  position: string;
+  label: string;
+  title: string;
+  eventName: string;
+  buttonType: typeof Button;
 }
 
 export class Button extends ol.control.Control {
-  static DEFAULT_OPTIONS: ButtonOptions = {
+  static DEFAULT_OPTIONS: Partial<ButtonOptions> = {
     className: "ol-button",
     position: "top right",
     label: "Button",
@@ -23,8 +24,8 @@ export class Button extends ol.control.Control {
     buttonType: Button
   };
 
-  static create(options?: ButtonOptions) {
-    options = mixin(mixin({}, Button.DEFAULT_OPTIONS), options || {});
+  static create(opt?: Partial<ButtonOptions>) {
+    let options = mixin(mixin({}, Button.DEFAULT_OPTIONS), opt || {}) as ButtonOptions;
 
     options.element = options.element || document.createElement("DIV");
 
@@ -63,10 +64,12 @@ export class Button extends ol.control.Control {
 
     this.on("change:active", () => {
       this.options.element.classList.toggle("active", this.get("active"));
-      options.map.dispatchEvent({
-        type: options.eventName,
-        control: this
-      });
+      if (options.map) {
+        options.map.dispatchEvent({
+          type: options.eventName,
+          control: this
+        });
+      }
     });
   }
 
@@ -80,7 +83,7 @@ export class Button extends ol.control.Control {
 
   destroy() {
     this.handlers.forEach(h => h());
-    this.setTarget(null);
+    this.setTarget(<any>null);
   }
 
   cssin() {

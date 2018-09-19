@@ -4,11 +4,12 @@ import { defaults } from "ol3-fun/index";
 import { Format } from "ol3-symbolizer/index";
 
 export interface TranslateControlOptions extends IButtonOptions {
-  style?: { [name: string]: Format.Style[] };
+  style: { [name: string]: Format.Style[] };
+  map: ol.Map; // required
 }
 
 export class Translate extends Button {
-  static DEFAULT_OPTIONS: TranslateControlOptions = {
+  static DEFAULT_OPTIONS: Partial<TranslateControlOptions> = {
     className: "ol-translate",
     position: "top right",
     label: "XY",
@@ -75,18 +76,16 @@ export class Translate extends Button {
     buttonType: Translate
   };
 
-  static create(options?: TranslateControlOptions) {
-    options = defaults({}, options, Translate.DEFAULT_OPTIONS);
+  static create(opt?: Partial<TranslateControlOptions>) {
+    let options = defaults({}, opt || {}, Translate.DEFAULT_OPTIONS) as TranslateControlOptions;
     return Button.create(options);
   }
 
   constructor(options: TranslateControlOptions) {
     super(options);
 
-    let map = options.map;
-
     let select = new ol.interaction.Select({
-      style: (feature: ol.Feature, res: number) => {
+      style: (feature: ol.Feature | ol.render.Feature, res: number) => {
         let style = options.style[feature.getGeometry().getType()].map(s => this.symbolizer.fromJson(s));
         return style;
       }

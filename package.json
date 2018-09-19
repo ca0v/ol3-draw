@@ -32,7 +32,7 @@
   },
   "homepage": "https://github.com/ca0v/ol3-draw#readme",
   "devDependencies": {
-    "@types/jquery": "^3.3.6",
+    "@types/jquery": "^3.3.9",
     "@types/mocha": "^5.2.5",
     "@types/openlayers": "^4.6.12",
     "@types/proj4": "^2.3.4",

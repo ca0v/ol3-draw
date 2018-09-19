@@ -4,14 +4,15 @@ import { defaults } from "ol3-fun/index";
 import { Format } from "ol3-symbolizer/index";
 
 export interface DeleteControlOptions extends IButtonOptions {
-  multi?: boolean;
-  style?: { [name: string]: Format.Style[] };
+  multi: boolean;
+  style: { [name: string]: Format.Style[] };
   selection?: ol.interaction.Select;
-  boxSelectCondition?: (mapBrowserEvent: ol.MapBrowserEvent) => boolean;
+  boxSelectCondition: (mapBrowserEvent: ol.MapBrowserEvent) => boolean;
 }
 
 export class Delete extends Button {
-  static DEFAULT_OPTIONS: DeleteControlOptions = {
+  static DEFAULT_OPTIONS: Partial<DeleteControlOptions> = {
+    multi: false,
     className: "ol-delete",
     label: "␡",
     title: "Delete",
@@ -80,8 +81,8 @@ export class Delete extends Button {
 
   public options: DeleteControlOptions;
 
-  static create(options?: DeleteControlOptions) {
-    options = defaults({}, options, Delete.DEFAULT_OPTIONS);
+  static create(options?: Partial<DeleteControlOptions>) {
+    options = defaults({}, options, Delete.DEFAULT_OPTIONS) as DeleteControlOptions;
     return Button.create(options);
   }
 
@@ -95,16 +96,17 @@ export class Delete extends Button {
 
   constructor(options: DeleteControlOptions) {
     super(options);
+    this.options = options;
 
+    if (!options.map) throw "map is a require option";
     let map = options.map;
-    let featureLayers = <Array<{ feature: ol.Feature; source: ol.source.Vector }>>[];
 
-    let selection = (options.selection =
+    let selection: any = (options.selection =
       options.selection ||
       new ol.interaction.Select({
         condition: ol.events.condition.click,
         multi: false,
-        style: (feature: ol.Feature, res: number) => {
+        style: (feature: ol.Feature | ol.render.Feature, res: number) => {
           let index = selection
             .getFeatures()
             .getArray()
@@ -140,7 +142,7 @@ export class Delete extends Button {
     boxSelect.on("boxend", args => {
       let extent = boxSelect.getGeometry().getExtent();
       let features = selection.getFeatures().getArray();
-      options.map
+      map
         .getLayers()
         .getArray()
         .filter(l => l instanceof ol.layer.Vector)
@@ -152,7 +154,7 @@ export class Delete extends Button {
               this.addFeatureLayerAssociation(feature, l);
             } else {
               selection.getFeatures().remove(feature);
-              this.addFeatureLayerAssociation(feature, null);
+              this.addFeatureLayerAssociation(feature, <any>null);
             }
           })
         );
@@ -180,17 +182,19 @@ export class Delete extends Button {
 
   public clear() {
     let selection = this.options.selection;
-    selection.getFeatures().clear();
+    selection && selection.getFeatures().clear();
     this.featureLayerAssociation_ = [];
   }
 
   public delete() {
-    let selection = this.options.selection;
-    selection.getFeatures().forEach(f => {
-      let l = selection.getLayer(f) || this.featureLayerAssociation_[f.getId()];
-      l && l.getSource().removeFeature(f);
-    });
-    selection.getFeatures().clear();
+    if (this.options.selection) {
+      let selection = this.options.selection;
+      selection.getFeatures().forEach(f => {
+        let l = selection.getLayer(f) || this.featureLayerAssociation_[f.getId()];
+        l && l.getSource().removeFeature(f);
+      });
+      selection.getFeatures().clear();
+    }
     this.featureLayerAssociation_ = [];
   }
 }

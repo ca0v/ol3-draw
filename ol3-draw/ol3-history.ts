@@ -17,6 +17,7 @@ export class NavHistory {
   }
 
   private constructor(public options: NavHistoryOptions) {
+    if (!options.map) throw "map is a required option";
     let map = options.map;
 
     let history = <
@@ -55,7 +56,7 @@ export class NavHistory {
         {
           zoom: extent.zoom,
           center: extent.center,
-          duration: this.options.delay / 10
+          duration: (this.options.delay || 0) / 10
         },
         resume
       );

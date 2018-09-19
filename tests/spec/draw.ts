@@ -17,7 +17,7 @@ describe("Draw Tests", () => {
   });
 });
 
-function checkDefaultInputOptions(options: DrawControlOptions) {
+function checkDefaultInputOptions(options: Partial<DrawControlOptions>) {
   should(!!options, "options");
   shouldEqual(options.className, "ol-draw", "className");
   shouldEqual(options.map, undefined, "map");

@@ -49,7 +49,7 @@ describe("wfs-sync", () => {
     });
 });
 
-function checkDefaultInputOptions(options: WfsSyncOptions) {
+function checkDefaultInputOptions(options: Partial<WfsSyncOptions>) {
   should(!!options, "options");
   shouldEqual(options.featureIdFieldName, "gid", "featureIdFieldName");
   shouldEqual(options.lastUpdateFieldName, "touched", "lastUpdateFieldName");

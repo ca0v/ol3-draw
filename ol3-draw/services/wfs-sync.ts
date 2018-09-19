@@ -15,17 +15,17 @@ export interface WfsSyncOptions {
   // wfs namespace prefix
   featurePrefix: string;
   // formatter for turning feature into a service request
-  formatter?: ol.format.WFS;
+  formatter: ol.format.WFS;
   // feature geometry to layer mapping (Point -> "point-layer")
   targets: { [name: string]: string }; // name is ol.geom.GeometryType
   // the attribute name to use to manage versioning
-  lastUpdateFieldName?: string;
+  lastUpdateFieldName: string;
   // target SRS, what spatial reference should be used when saving?
-  srsName?: string;
+  srsName: string;
   // the SRS of the feature geometry
   sourceSrs?: string;
   // the name of the attribute holding the unique feature identifier (gid)
-  featureIdFieldName?: string;
+  featureIdFieldName: string;
   // convertion option for reducing or transforming a cloned geometry just before saving
   converter?: (geom: ol.geom.Geometry) => ol.geom.Geometry;
 }
@@ -33,7 +33,6 @@ export interface WfsSyncOptions {
 const serializer = new XMLSerializer();
 
 export class WfsSync {
-
   private options: WfsSyncOptions;
 
   // remember when we saved in the past
@@ -42,13 +41,13 @@ export class WfsSync {
   // track deletes until its time to save changes
   private deletes: ol.Feature[];
 
-  static DEFAULT_OPTIONS = <WfsSyncOptions>{
+  static DEFAULT_OPTIONS: Partial<WfsSyncOptions> = {
     featureIdFieldName: "gid",
-    lastUpdateFieldName: "touched",
-  }
+    lastUpdateFieldName: "touched"
+  };
 
-  static create(options?: WfsSyncOptions) {
-    options = defaults(options || {}, WfsSync.DEFAULT_OPTIONS);
+  static create(opt?: Partial<WfsSyncOptions>) {
+    let options = defaults(opt || {}, WfsSync.DEFAULT_OPTIONS) as WfsSyncOptions;
     if (!options.formatter) {
       options.formatter = new ol.format.WFS();
     }
@@ -86,12 +85,12 @@ export class WfsSync {
    * start watching the feature collection, saving when there's a lull in the action
    */
   private watch() {
-
+    let lastUpdateFieldName = this.options.lastUpdateFieldName || "lastUpdate";
     let save = debounce(() => {
       try {
         this.trigger("before-save");
         this.saveDrawings({
-          features: this.options.source.getFeatures().filter(f => !!f.get(this.options.lastUpdateFieldName))
+          features: this.options.source.getFeatures().filter(f => !!f.get(lastUpdateFieldName))
         }).then(() => this.trigger("after-save"));
       } catch (ex) {
         this.trigger("error", { exception: ex });
@@ -100,7 +99,7 @@ export class WfsSync {
     }, 1000);
 
     let touch = (f: ol.Feature) => {
-      f.set(this.options.lastUpdateFieldName, Date.now());
+      f.set(lastUpdateFieldName, Date.now());
       save();
     };
 
@@ -115,31 +114,32 @@ export class WfsSync {
     let source = this.options.source;
     source.forEachFeature(f => watch(f));
 
-    source.on("addfeature", (args: ol.source.VectorEvent) => {
-      watch(args.feature);
-      touch(args.feature);
+    source.on("addfeature", (args: ol.events.Event | ol.source.VectorEvent) => {
+      if (args instanceof ol.source.VectorEvent) {
+        watch(args.feature);
+        touch(args.feature);
+      }
     });
 
-    source.on("removefeature", (args: ol.source.VectorEvent) => {
-      this.deletes.push(args.feature);
-      touch(args.feature);
+    source.on("removefeature", (args: ol.events.Event | ol.source.VectorEvent) => {
+      if (args instanceof ol.source.VectorEvent) {
+        this.deletes.push(args.feature);
+        touch(args.feature);
+      }
     });
-
   }
 
   /**
    * Performs the actual save of a list of feature (immutable)
    */
-  private saveDrawings(args: {
-    features: ol.Feature[];
-  }) {
+  private saveDrawings(args: { features: ol.Feature[] }) {
     let features = args.features.filter(f => this.lastSavedTime <= f.get(this.options.lastUpdateFieldName));
 
     let saveTo = (featureType: string, geomType: ol.geom.GeometryType) => {
       let toSave = features.filter(f => f.getGeometry().getType() === geomType);
       let toDelete = this.deletes.filter(f => !!f.get(this.options.featureIdFieldName));
 
-      if (0 === (toSave.length + toDelete.length)) {
+      if (0 === toSave.length + toDelete.length) {
         console.info("nothing to save:", featureType, geomType);
         return;
       }
@@ -157,34 +157,33 @@ export class WfsSync {
       let toInsert = toSave.filter(f => !f.get(this.options.featureIdFieldName));
       let toUpdate = toSave.filter(f => !!f.get(this.options.featureIdFieldName));
 
-      if (this.options.converter && toInsert.length) {
-        //toInsert = toInsert.map(f => f.clone());
-        toInsert.forEach(f => f.setGeometry(this.options.converter(f.getGeometry())));
+      if (toInsert.length) {
+        if (this.options.converter) {
+          let converter = this.options.converter;
+          //toInsert = toInsert.map(f => f.clone());
+          toInsert.forEach(f => f.setGeometry(converter(f.getGeometry())));
+        }
       }
 
       toInsert.forEach(f => f.set(this.options.lastUpdateFieldName, undefined));
       toUpdate.forEach(f => f.set(this.options.lastUpdateFieldName, undefined));
       toDelete.forEach(f => f.set(this.options.lastUpdateFieldName, undefined));
 
-      let requestBody = format.writeTransaction(
-        toInsert,
-        toUpdate,
-        toDelete,
-        {
-          featureNS: this.options.featureNS,
-          featurePrefix: this.options.featurePrefix,
-          featureType: featureType,
-          srsName: this.options.srsName,
-          nativeElements: []
-        });
+      let requestBody = format.writeTransaction(toInsert, toUpdate, toDelete, {
+        featureNS: this.options.featureNS,
+        featurePrefix: this.options.featurePrefix,
+        featureType: featureType,
+        srsName: this.options.srsName,
+        nativeElements: []
+      });
 
       type ResponseType = {
-        "transactionSummary": {
-          "totalInserted": number;
-          "totalUpdated": number;
-          "totalDeleted": number;
-        },
-        "insertIds": string[]
+        transactionSummary: {
+          totalInserted: number;
+          totalUpdated: number;
+          totalDeleted: number;
+        };
+        insertIds: string[];
       };
 
       return $.ajax({
@@ -203,7 +202,7 @@ export class WfsSync {
             let exception = response.documentElement.getElementsByTagName("ows:ExceptionText")[0];
             this.trigger("error", exception.textContent);
           }
-          let responseInfo = <ResponseType><any>format.readTransactionResponse(response);
+          let responseInfo = <ResponseType>(<any>format.readTransactionResponse(response));
           if (responseInfo.transactionSummary.totalDeleted) {
             console.log("totalDeleted: ", responseInfo.transactionSummary.totalDeleted);
           }
@@ -214,7 +213,10 @@ export class WfsSync {
             console.log("totalUpdated: ", responseInfo.transactionSummary.totalUpdated);
           }
 
-          console.assert(toInsert.length === responseInfo.transactionSummary.totalInserted, "number inserted should equal number of new keys");
+          console.assert(
+            toInsert.length === responseInfo.transactionSummary.totalInserted,
+            "number inserted should equal number of new keys"
+          );
 
           if (this.options.converter) {
             //let originalToInsert = toSave.filter(f => !f.get(this.options.featureIdFieldName));
@@ -226,7 +228,6 @@ export class WfsSync {
             f.set(this.options.featureIdFieldName, id.split(".").pop());
             f.setId(id);
           });
-
         }
       });
     };
@@ -235,6 +236,4 @@ export class WfsSync {
     let promises = Object.keys(this.options.targets).map(k => saveTo(this.options.targets[k], <ol.geom.GeometryType>k));
     return $.when.apply(this, promises);
   }
-
-
 }

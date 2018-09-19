@@ -2,6 +2,8 @@
   "extends": "../tsconfig",
   "compilerOptions": {
     "declaration": false,
+    "strict": false,
+    "strictNullChecks": false,
     "outFile": "../built/tests/spec/index.js"
   },
   "include": ["index.ts"]

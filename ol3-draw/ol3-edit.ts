@@ -4,11 +4,11 @@ import { Button, ButtonOptions as IButtonOptions } from "./ol3-button";
 import { Format } from "ol3-symbolizer/index";
 
 export interface ModifyControlOptions extends IButtonOptions {
-  style?: { [name: string]: Format.Style[] };
+  style: { [name: string]: Format.Style[] };
 }
 
 export class Modify extends Button {
-  static DEFAULT_OPTIONS: ModifyControlOptions = {
+  static DEFAULT_OPTIONS: Partial<ModifyControlOptions> = {
     className: "ol-edit",
     label: "Edit",
     title: "Edit",
@@ -85,8 +85,8 @@ export class Modify extends Button {
     buttonType: Modify
   };
 
-  static create(options?: ModifyControlOptions) {
-    options = defaults({}, options, Modify.DEFAULT_OPTIONS);
+  static create(opt?: Partial<ModifyControlOptions>) {
+    let options = defaults({}, opt, Modify.DEFAULT_OPTIONS) as ModifyControlOptions;
     return Button.create(options);
   }
 
@@ -94,10 +94,11 @@ export class Modify extends Button {
 
   constructor(options: ModifyControlOptions) {
     super(options);
+    this.options = options;
 
     let styles = defaults(options.style, Modify.DEFAULT_OPTIONS.style);
     let select = new ol.interaction.Select({
-      style: (feature: ol.Feature, res: number) => {
+      style: (feature: ol.Feature | ol.render.Feature, res: number) => {
         let featureType = feature.getGeometry().getType();
         let style = styles[featureType].map(s => this.symbolizer.fromJson(s));
 
@@ -121,6 +122,8 @@ export class Modify extends Button {
                   points = geom.getCoordinates();
                 } else if (geom instanceof ol.geom.Point) {
                   points = [geom.getCoordinates()];
+                } else {
+                  throw "could not find points for this geometry";
                 }
                 return new ol.geom.MultiPoint(points);
               });
@@ -134,13 +137,11 @@ export class Modify extends Button {
 
     let modify = new ol.interaction.Modify({
       features: select.getFeatures(),
-      style: (feature: ol.Feature, res: number) => {
+      style: (feature: ol.Feature | ol.render.Feature, res: number) => {
         let featureType = feature.getGeometry().getType();
-        let style = (options.style[featureType] || Modify.DEFAULT_OPTIONS.style[featureType]).map(s =>
-          this.symbolizer.fromJson(s)
-        );
-
-        return style;
+        let json =
+          options.style[featureType] || (Modify.DEFAULT_OPTIONS.style && Modify.DEFAULT_OPTIONS.style[featureType]);
+        return json && json.map(s => this.symbolizer.fromJson(s));
       }
     });
 
@@ -155,13 +156,13 @@ export class Modify extends Button {
     this.once("change:active", () => {
       [select, modify].forEach(i => {
         i.setActive(false);
-        options.map.addInteraction(i);
+        options.map && options.map.addInteraction(i);
       });
 
       this.handlers.push(() => {
         [select, modify].forEach(i => {
           i.setActive(false);
-          options.map.removeInteraction(i);
+          options.map && options.map.removeInteraction(i);
         });
       });
     });

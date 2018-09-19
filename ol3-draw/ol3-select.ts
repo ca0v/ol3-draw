@@ -4,13 +4,13 @@ import { defaults } from "ol3-fun/index";
 import { Format } from "ol3-symbolizer/index";
 
 export interface SelectOptions extends IButtonOptions {
-  multi?: boolean;
-  style?: { [name: string]: Format.Style[] };
-  boxSelectCondition?: (mapBrowserEvent: ol.MapBrowserEvent) => boolean;
+  multi: boolean;
+  style: { [name: string]: Format.Style[] };
+  boxSelectCondition: (mapBrowserEvent: ol.MapBrowserEvent) => boolean;
 }
 
 export class Select extends Button {
-  static DEFAULT_OPTIONS: SelectOptions = {
+  static DEFAULT_OPTIONS: Partial<SelectOptions> = {
     className: "ol-select",
     position: "top right",
     label: "§",
@@ -129,15 +129,15 @@ export class Select extends Button {
     }
   };
 
-  static create(options?: SelectOptions) {
-    options = defaults({}, options, Select.DEFAULT_OPTIONS);
+  static create(opt?: Partial<SelectOptions>) {
+    let options = defaults({}, opt, Select.DEFAULT_OPTIONS) as SelectOptions;
     return Button.create(options);
   }
 
   constructor(options: SelectOptions) {
     super(options);
 
-    let selection = new ol.interaction.Select({
+    let selection = new ol.interaction.Select(<any>{
       condition: ol.events.condition.click,
       multi: options.multi,
       style: (feature: ol.Feature, res: number) => {
@@ -163,6 +163,8 @@ export class Select extends Button {
     boxSelect.on("boxend", args => {
       let extent = boxSelect.getGeometry().getExtent();
       let features = selection.getFeatures().getArray();
+      if (!options.map) return;
+
       options.map
         .getLayers()
         .getArray()
@@ -182,13 +184,13 @@ export class Select extends Button {
     this.once("change:active", () => {
       [boxSelect, selection].forEach(i => {
         i.setActive(false);
-        options.map.addInteraction(i);
+        options.map && options.map.addInteraction(i);
       });
 
       this.handlers.push(() => {
         [boxSelect, selection].forEach(i => {
           i.setActive(false);
-          options.map.removeInteraction(i);
+          options.map && options.map.removeInteraction(i);
         });
       });
     });
