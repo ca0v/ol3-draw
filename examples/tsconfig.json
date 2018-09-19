@@ -1,13 +1,8 @@
 {
-    "compilerOptions": {
-        "module": "amd",
-        "target": "es5",
-        "declaration": true,
-        "noImplicitAny": false,
-        "outFile": "../built/examples.max.js",
-        "sourceMap": true,
-        "moduleResolution": "classic",
-        "baseUrl": "../node_modules"
-    },
-    "include": ["index.ts"]
+  "extends": "../tsconfig",
+  "compilerOptions": {
+    "declaration": false,
+    "outFile": "../built/examples.max.js"
+  },
+  "include": ["index.ts"]
 }

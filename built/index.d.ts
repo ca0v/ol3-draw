@@ -185,6 +185,26 @@ declare module "node_modules/ol3-fun/ol3-fun/deep-extend" {
      */
     export function extend<A extends object>(a: A, b?: Partial<A>, trace?: Array<TraceItem>, history?: History): A;
 }
+declare module "node_modules/ol3-fun/ol3-fun/extensions" {
+    /**
+     * Stores associated data in an in-memory repository using a WeakMap
+     */
+    export class Extensions {
+        private hash;
+        isExtended(o: any): boolean;
+        /**
+        Forces the existence of an extension container for an object
+        @param o the object of interest
+        @param [ext] sets these value on the extension object
+        @returns the extension object
+        */
+        extend<T extends object, U extends any>(o: T, ext?: U): U;
+        /**
+        Ensures extensions are shared across objects
+        */
+        bind(o1: any, o2: any): void;
+    }
+}
 declare module "node_modules/ol3-fun/index" {
     /**
      * decouples API from implementation
@@ -195,6 +215,7 @@ declare module "node_modules/ol3-fun/index" {
     import { parse as dmsParse } from "node_modules/ol3-fun/ol3-fun/parse-dms";
     import { slowloop } from "node_modules/ol3-fun/ol3-fun/slowloop";
     import { extend as deepExtend } from "node_modules/ol3-fun/ol3-fun/deep-extend";
+    import { Extensions } from "node_modules/ol3-fun/ol3-fun/extensions";
     let index: {
         asArray: typeof asArray;
         cssin: typeof cssin;
@@ -228,6 +249,7 @@ declare module "node_modules/ol3-fun/index" {
         navigation: {
             zoomToFeature: typeof zoomToFeature;
         };
+        Extensions: typeof Extensions;
     };
     export = index;
 }

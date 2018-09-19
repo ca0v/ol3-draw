@@ -8,7 +8,7 @@
     "update": "npm install ol3-fun ol3-symbolizer",
     "build-for-amd": "tsc -p tsconfig.json --outFile built/index.max.js",
     "build-for-examples": "tsc -p examples/tsconfig.json --outFile ./built/examples.max.js",
-    "live-for-tests": "live-server --port=5000 --wait=200 --watch=./built/*.max.js --open=\"./loaders/tests.html?theme=dark&debug=1\" --browser=CHROME",
+    "live-for-examples": "live-server --port=5000 --wait=200 --watch=./built/*.max.js --open=\"./loaders/tests.html?theme=dark&debug=1\" --browser=CHROME",
     "dev-for-examples": "npm run build-for-examples && start npm run live-for-tests && start npm run build-for-examples -- -w",
     "examples": "npm run build-for-examples && npm run live-for-tests",
     "build-for-tests": "tsc -p tests/tsconfig.json --outFile ./built/tests.max.js",
